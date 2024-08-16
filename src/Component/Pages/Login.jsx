@@ -1,7 +1,6 @@
 import React from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import loginCover from '../Assets/loginCover.jpg';
 import loginVector from '../Assets/loginVector.jpg';
 import xymaLogo from '../Assets/xymaLogoWhite.png';
@@ -10,48 +9,31 @@ import { PiPasswordFill } from "react-icons/pi";
 
 const Login = () => {
 
-    const [loginFormData, setLoginFormData] = useState({
-        Username: '',
-        Password: ''
-    });
+    const [Username, setUsername] = useState('');
+    const [Password, setPassword] = useState('');
 
     const navigate = useNavigate();
 
-    const handleLoginFormChange = (e) => {
-        const {name, value} = e.target;
-        setLoginFormData({...loginFormData, [name]: value});
-    };
-
-    const handleLoginFormSubmit = (e) => {
+    const handleLoginFormSubmit = async (e) => {
         e.preventDefault();
-        axios.post('http://localhost:4000/backend/login', loginFormData, {
+        try {
+          const response = await fetch('http://localhost:4000/backend/login', {
+            method: 'POST',
             headers: {
-                "Content-Type": "application/json",
+                'Content-Type': 'application/json',
             },
-        })
-        .then((response) => {
-            const data = response.data;
-            if(data.token) {
-                localStorage.setItem('token', data.token);
-                navigate(data.redirectUrl);
-            } else {
-                window.alert('Invalid credentials');
-            };
-        })
-        .catch((error) => {
-             if (error.response) {
-               // Request made and server responded
-               window.alert(
-                 error.response.data.message || "Invalid credentials"
-               );
-             } else if (error.request) {
-               // Request made but no response
-               window.alert("No response from server");
-             } else {
-               // Something else happened
-               window.alert("Error occurred");
-             }
-        });
+            body: JSON.stringify({ Username, Password }),
+          });
+          const data = await response.json();
+          if(data.token) {
+            localStorage.setItem('token', data.token);
+            navigate(data.redirectUrl);
+          } else {
+            alert(data);
+          };
+        } catch (error) {
+          console.log(error);
+        };
     };
 
   return (
@@ -75,8 +57,8 @@ const Login = () => {
               <input
                 type="text"
                 name='Username'
-                value={loginFormData.Username}
-                onChange={handleLoginFormChange}
+                value={Username}
+                onChange={(e) => setUsername(e.target.value)}
                 placeholder="Enter Username . . ."
                 autoComplete='off'
                 className="bg-transparent placeholder-gray-300 focus:outline-none"
@@ -88,8 +70,8 @@ const Login = () => {
               <input
                 type="password"
                 name='Password'
-                value={loginFormData.Password}
-                onChange={handleLoginFormChange}
+                value={Password}
+                onChange={(e)=> setPassword(e.target.value)}
                 placeholder="Enter Password . . ."
                 className="bg-transparent placeholder-gray-300 focus:outline-none"
                 required
