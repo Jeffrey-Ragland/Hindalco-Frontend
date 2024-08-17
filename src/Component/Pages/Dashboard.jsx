@@ -7,6 +7,7 @@ import ReactSlider from 'react-slider';
 import {Chart} from 'react-google-charts';
 import {Bar, Line} from 'react-chartjs-2';
 import ChartDataLabels from "chartjs-plugin-datalabels";
+import ThreeDModel from './ThreeDModel';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -616,7 +617,7 @@ const Dashboard = () => {
       className="h-screen p-4 text-white 2xl:text-2xl flex flex-col gap-2"
       style={{
         backgroundImage:
-          "radial-gradient(circle, #4b5563, #47515f, #434d5c, #404a58, #3c4655, #384251, #353f4e, #313b4a, #2c3645, #283240, #232d3c, #1f2937)",
+          "linear-gradient(to left , #4b5563, #47515f, #434d5c, #404a58, #3c4655, #384251, #353f4e, #313b4a, #2c3645, #283240, #232d3c, #1f2937)",
       }}
     >
       <div className="h-[14%] flex flex-col justify-center gap-2">
@@ -652,14 +653,14 @@ const Dashboard = () => {
               Click to see individual sensor data
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2 text-sm">
             {/* last update */}
             <div className="px-2 py-1 border border-white rounded-xl">
               Last update : 18:35 16-08-2024
             </div>
             {/* report */}
             <div
-              className="px-2 py-1 rounded-xl text-[#173baa] text-sm font-medium"
+              className="px-2 py-1 rounded-lg text-[#173baa] font-medium"
               style={{
                 backgroundImage:
                   "linear-gradient(to right, #38ba98, #4ec494, #64cd90, #7bd68a, #92de84)",
@@ -785,16 +786,6 @@ const Dashboard = () => {
           </div>
 
           <div className=" w-[60%] flex gap-2">
-            {/* 3d model */}
-            <div
-              className=" w-1/2 rounded-xl flex justify-center items-center text-gray-600"
-              style={{
-                backgroundImage:
-                  "radial-gradient(circle, #dbf2ff, #d6ebf9, #d1e4f3, #ccdced, #c8d5e7, #c2cfe3, #bdcadf, #b7c4db, #afbed8, #a7b8d5, #9eb3d2, #96adcf)",
-              }}
-            >
-              3d model
-            </div>
             {/* bar chart */}
             <div
               className=" w-1/2 rounded-xl py-1 px-1.5 text-gray-600"
@@ -804,6 +795,16 @@ const Dashboard = () => {
               }}
             >
               <Bar data={barData} options={barOptions} height={"100%"} />
+            </div>
+            {/* 3d model */}
+            <div
+              className=" w-1/2 rounded-xl text-gray-600"
+              style={{
+                backgroundImage:
+                  "radial-gradient(circle, #dbf2ff, #d6ebf9, #d1e4f3, #ccdced, #c8d5e7, #c2cfe3, #bdcadf, #b7c4db, #afbed8, #a7b8d5, #9eb3d2, #96adcf)",
+              }}
+            >
+              <ThreeDModel />
             </div>
           </div>
         </div>
@@ -818,8 +819,15 @@ const Dashboard = () => {
               scrollbarColor: "#4bc0c0 transparent",
             }}
           >
+            {/* background-image: linear-gradient(to right, #4bc0c0, #49cccc, #45d9d9, #40e5e5, #3af2f2); */}
             <table className="w-full">
-              <thead className="sticky top-0 bg-[#4bc0c0] text-gray-600">
+              <thead
+                className="sticky top-0 text-gray-600"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(to right, #4bc0c0, #49cccc, #45d9d9, #40e5e5, #3af2f2)",
+                }}
+              >
                 <tr>
                   <th className="px-2 border border-gray-500">S.No</th>
                   <th className="px-2 border border-gray-500">S1</th>
@@ -866,7 +874,11 @@ const Dashboard = () => {
           </div>
           {/* line chart */}
           <div
-            className=" w-1/2 rounded-xl text-gray-600 py-1 px-1.5 flex flex-col"
+            className={`rounded-xl text-gray-600 ${
+              lineGraphExpanded
+                ? "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[95%] w-[95%] p-4 z-10"
+                : "w-1/2 py-1 px-1.5"
+            }`}
             // className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[95%] w-[95%] rounded-xl text-gray-600 flex flex-col p-4 z-10"
             style={{
               backgroundImage:
@@ -878,7 +890,8 @@ const Dashboard = () => {
               {/* <div className="border border-black ">Expand</div> */}
               <div onClick={() => setLineGraphExpanded(!lineGraphExpanded)}>
                 <button class="expand-btn hover:scale-110 duration-200">
-                  <i class="expand-animation"></i>Expand
+                  <i class="expand-animation"></i>
+                  {lineGraphExpanded ? "Shrink" : "Expand"}
                   <i class="expand-animation"></i>
                 </button>
               </div>
@@ -964,7 +977,9 @@ const Dashboard = () => {
         </div>
       </div>
       {/* overlay */}
-      {/* <div className="absolute inset-0 h-full w-full bg-black/40 "></div> */}
+      {lineGraphExpanded && (
+        <div className="absolute inset-0 h-full w-full bg-black/50 " />
+      )}
     </div>
   );
 }
