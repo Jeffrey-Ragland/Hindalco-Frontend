@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import {Link} from 'react-router-dom';
 import xymaLogo from '../Assets/xymaLogoWhite.png';
 import hindalcoLogo from '../Assets/hindalcoLogo.png';
+import ReactSlider from 'react-slider';
 import {Chart} from 'react-google-charts';
 import {Bar, Line} from 'react-chartjs-2';
 import ChartDataLabels from "chartjs-plugin-datalabels";
@@ -32,6 +33,7 @@ ChartJS.register(
 );
 
 const Dashboard = () => {
+
   // responsive gauge height
   const getGaugeHeight = () => {
     if (window.innerWidth > 1536) {
@@ -41,6 +43,10 @@ const Dashboard = () => {
   };
 
   const [gaugeHeight, setGaugeHeight] = useState(getGaugeHeight());
+  const [lineSliderValues, setLineSliderValues] = useState([0, 1000]);
+  const [lineGraphExpanded, setLineGraphExpanded] = useState(false);
+
+  console.log("line graph expanded :", lineGraphExpanded);
 
   useEffect(() => {
     const handleResize = () => {
@@ -460,16 +466,98 @@ const Dashboard = () => {
       {
         label: "s1",
         data: [65, 59, 80, 81, 56, 55, 76, 43, 21, 70, 84, 32],
-        borderColor: "rgba(75, 192, 192, 1)",
-        backgroundColor: "rgba(75, 192, 192, 0.2)",
+        borderColor: "rgba(204, 0, 0, 1)",
+        backgroundColor: "rgba(204, 0, 0, 0.2)",
         fill: false,
+        tension: 0.4,
       },
       {
         label: "s2",
         data: [56, 55, 76, 43, 21, 70, 80, 90, 100, 10, 21, 70],
-        borderColor: "rgba(255, 99, 132, 1)",
-        backgroundColor: "rgba(255, 99, 132, 0.2)",
+        borderColor: "rgba(0, 0, 204, 1)",
+        backgroundColor: "rgba(0, 0, 204, 0.2)",
         fill: false,
+        tension: 0.4,
+      },
+      {
+        label: "s3",
+        data: [45, 89, 67, 34, 78, 90, 12, 55, 66, 77, 83, 21],
+        borderColor: "rgba(0, 204, 0, 1)",
+        backgroundColor: "rgba(0, 204, 0, 0.2)",
+        fill: false,
+        tension: 0.4,
+      },
+      {
+        label: "s4",
+        data: [32, 48, 90, 77, 65, 53, 70, 86, 99, 40, 28, 62],
+        borderColor: "rgba(204, 204, 0, 1)",
+        backgroundColor: "rgba(204, 204, 0, 0.2)",
+        fill: false,
+        tension: 0.4,
+      },
+      {
+        label: "s5",
+        data: [88, 62, 79, 45, 23, 67, 85, 91, 34, 53, 80, 70],
+        borderColor: "rgba(204, 132, 0, 1)",
+        backgroundColor: "rgba(204, 132, 0, 0.2)",
+        fill: false,
+        tension: 0.4,
+      },
+      {
+        label: "s6",
+        data: [71, 84, 56, 34, 67, 89, 43, 52, 74, 91, 39, 63],
+        borderColor: "rgba(102, 0, 102, 1)",
+        backgroundColor: "rgba(102, 0, 102, 0.2)",
+        fill: false,
+        tension: 0.4,
+      },
+      {
+        label: "s7",
+        data: [99, 82, 61, 45, 56, 77, 34, 90, 64, 51, 72, 88],
+        borderColor: "rgba(0, 204, 204, 1)",
+        backgroundColor: "rgba(0, 204, 204, 0.2)",
+        fill: false,
+        tension: 0.4,
+      },
+      {
+        label: "s8",
+        data: [12, 34, 56, 78, 90, 23, 45, 67, 89, 34, 76, 80],
+        borderColor: "rgba(204, 0, 204, 1)",
+        backgroundColor: "rgba(204, 0, 204, 0.2)",
+        fill: false,
+        tension: 0.4,
+      },
+      {
+        label: "s9",
+        data: [56, 78, 90, 45, 34, 12, 67, 89, 23, 76, 80, 54],
+        borderColor: "rgba(204, 153, 162, 1)",
+        backgroundColor: "rgba(204, 153, 162, 0.2)",
+        fill: false,
+        tension: 0.4,
+      },
+      {
+        label: "s10",
+        data: [45, 67, 89, 23, 54, 76, 90, 12, 34, 67, 89, 45],
+        borderColor: "rgba(132, 34, 34, 1)",
+        backgroundColor: "rgba(132, 34, 34, 0.2)",
+        fill: false,
+        tension: 0.4,
+      },
+      {
+        label: "s11",
+        data: [78, 90, 23, 56, 45, 89, 12, 34, 67, 76, 90, 54],
+        borderColor: "rgba(0, 102, 102, 1)",
+        backgroundColor: "rgba(0, 102, 102, 0.2)",
+        fill: false,
+        tension: 0.4,
+      },
+      {
+        label: "s12",
+        data: [34, 56, 78, 90, 23, 45, 67, 89, 12, 76, 90, 54],
+        borderColor: "rgba(0, 204, 0, 1)",
+        backgroundColor: "rgba(0, 204, 0, 0.2)",
+        fill: false,
+        tension: 0.4,
       },
     ],
   };
@@ -480,11 +568,43 @@ const Dashboard = () => {
     plugins: {
       legend: {
         position: "top",
+        labels: {
+          boxWidth: 20,
+          boxHeight: 8,
+          padding: 10,
+          color: "#4B5563",
+          font: {
+            size: 8,
+          },
+        },
+      },
+      datalabels: {
+        display: false,
       },
       tooltip: {
         callbacks: {
           label: function (tooltipItem) {
-            return `${tooltipItem.dataset.label}: ${tooltipItem.raw} units`;
+            return `${tooltipItem.dataset.label}: ${tooltipItem.raw}°C`;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: "#4B5563",
+          font: {
+            size: 8,
+          },
+        },
+      },
+      y: {
+        min: lineSliderValues[0],
+        max: lineSliderValues[1],
+        ticks: {
+          color: "#4B5563",
+          font: {
+            size: 8,
           },
         },
       },
@@ -551,7 +671,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="h-[86%] flex flex-col gap-2">
+      <div className="relative h-[86%] flex flex-col gap-2">
         <div className="h-[60%] gap-2 flex ">
           {/* gauge */}
           <div className="w-[40%] border border-l-white border-r-white border-t-transparent border-b-transparent rounded-3xl">
@@ -746,16 +866,105 @@ const Dashboard = () => {
           </div>
           {/* line chart */}
           <div
-            className=" w-1/2 rounded-xl text-gray-600"
+            className=" w-1/2 rounded-xl text-gray-600 py-1 px-1.5 flex flex-col"
+            // className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[95%] w-[95%] rounded-xl text-gray-600 flex flex-col p-4 z-10"
             style={{
               backgroundImage:
                 "linear-gradient(to right top, #96adcf, #9eb3d2, #a7b8d5, #afbed8, #b7c4db, #bdcadf, #c2cfe3, #c8d5e7, #ccdced, #d1e4f3, #d6ebf9, #dbf2ff)",
             }}
           >
-            <Line data={lineData} options={lineOptions} width={"100%"} />
+            {/* top layer */}
+            <div className="flex justify-between items-center text-xs h-[10%]">
+              {/* <div className="border border-black ">Expand</div> */}
+              <div onClick={() => setLineGraphExpanded(!lineGraphExpanded)}>
+                <button class="expand-btn hover:scale-110 duration-200">
+                  <i class="expand-animation"></i>Expand
+                  <i class="expand-animation"></i>
+                </button>
+              </div>
+              <div className="flex items-center px-2 py-1 text-xs font-medium">
+                <div className="mr-2">Set Limit:</div>
+                <input
+                  type="radio"
+                  id="option1"
+                  name="options"
+                  value={100}
+                  defaultChecked
+                  // checked={utmapsLineLimit === 100}
+                  className="cursor-pointer"
+                  // onChange={handleLineLimit}
+                />
+                <label htmlFor="option1" className="mr-2 cursor-pointer">
+                  100
+                </label>
+                <input
+                  type="radio"
+                  id="option2"
+                  name="options"
+                  value={300}
+                  // checked={utmapsLineLimit === 500}
+                  className="cursor-pointer"
+                  // onChange={handleLineLimit}
+                />
+                <label htmlFor="option2" className="mr-2 cursor-pointer">
+                  300
+                </label>
+                <input
+                  type="radio"
+                  id="option3"
+                  name="options"
+                  value={500}
+                  // checked={utmapsLineLimit === 1000}
+                  className="cursor-pointer"
+                  // onChange={handleLineLimit}
+                />
+                <label htmlFor="option3" className="mr-2 cursor-pointer">
+                  500
+                </label>
+                <input
+                  type="radio"
+                  id="option4"
+                  name="options"
+                  value={1000}
+                  // checked={utmapsLineLimit === 1500}
+                  className="cursor-pointer"
+                  // onChange={handleLineLimit}
+                />
+                <label htmlFor="option4" className="mr-2 cursor-pointer">
+                  1000
+                </label>
+              </div>
+            </div>
+            {/* bottom - line graph layer */}
+            <div className="h-[90%] flex">
+              {/* slider */}
+              <div className="w-[8%] flex justify-center items-center">
+                <ReactSlider
+                  className="w-10 h-[94%] flex justify-center items-center "
+                  thumbClassName="w-6 h-6 bg-[#4bc0c0] rounded-full flex items-center justify-center cursor-pointer text-gray-600 font-bold text-[10px] hover:scale-110 border border-gray-600 duration-200 focus:outline-none"
+                  trackClassName="w-0.5 rounded-full bg-red-600"
+                  min={0}
+                  max={1000}
+                  defaultValue={[0, 250]}
+                  renderThumb={(props, state) => (
+                    <div {...props}>{state.valueNow}</div>
+                  )}
+                  pearling
+                  minDistance={5}
+                  orientation="vertical"
+                  invert
+                  onChange={(value) => setLineSliderValues(value)}
+                />
+              </div>
+              <div className="w-[92%] ">
+                <Line data={lineData} options={lineOptions} width={"100%"} />
+              </div>
+            </div>
           </div>
         </div>
       </div>
+      {/* overlay */}
+      {/* <div className="absolute inset-0 h-full w-full bg-black/40 "></div> */}
     </div>
   );
 }
