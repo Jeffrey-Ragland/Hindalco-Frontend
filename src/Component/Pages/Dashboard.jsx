@@ -8,6 +8,8 @@ import {Chart} from 'react-google-charts';
 import {Bar, Line} from 'react-chartjs-2';
 import ChartDataLabels from "chartjs-plugin-datalabels";
 import ThreeDModel from './ThreeDModel';
+import { LuExpand, LuShrink } from "react-icons/lu";
+import { ImExit } from "react-icons/im";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -617,9 +619,10 @@ const Dashboard = () => {
       className="h-screen p-4 text-white 2xl:text-2xl flex flex-col gap-2"
       style={{
         backgroundImage:
-          "linear-gradient(to left , #4b5563, #47515f, #434d5c, #404a58, #3c4655, #384251, #353f4e, #313b4a, #2c3645, #283240, #232d3c, #1f2937)",
+          "linear-gradient(to right, #151c26, #1f2631, #28303c, #333b47, #3d4653, #434d5a, #495362, #4f5a69, #525e6d, #566171, #596576, #5d697a)",
       }}
     >
+      {/* background-image: linear-gradient(to right, #61314b, #643550, #663956, #693d5b, #6b4161, #6c4465, #6e486a, #6f4b6e, #704f73, #715377, #72577c, #735b80); */}
       <div className="h-[14%] flex flex-col justify-center gap-2">
         {/* top bar */}
         <div className="flex justify-between">
@@ -632,14 +635,20 @@ const Dashboard = () => {
             />
           </div>
           <div className="text-2xl font-medium">Temperature Measurement</div>
-          <Link to="/">
-            <button
-              className="flex justify-end bg-red-600 px-3 py-1 rounded-md text-white font-medium hover:scale-105 duration-200"
-              onClick={() => localStorage.clear()}
-            >
-              Logout
-            </button>
-          </Link>
+          <div className="w-[125px] flex justify-end">
+            <Link to="/">
+              <button
+                class="logout-button"
+                onClick={() => localStorage.clear()}
+              >
+                <div class="logout-logo ">
+                  <ImExit className="text-xl" />
+                </div>
+
+                <div class="logout-text text-lg">Logout</div>
+              </button>
+            </Link>
+          </div>
         </div>
 
         {/* 2nd layer */}
@@ -819,7 +828,6 @@ const Dashboard = () => {
               scrollbarColor: "#4bc0c0 transparent",
             }}
           >
-            {/* background-image: linear-gradient(to right, #4bc0c0, #49cccc, #45d9d9, #40e5e5, #3af2f2); */}
             <table className="w-full">
               <thead
                 className="sticky top-0 text-gray-600"
@@ -874,28 +882,39 @@ const Dashboard = () => {
           </div>
           {/* line chart */}
           <div
-            className={`rounded-xl text-gray-600 ${
+            className={`rounded-xl text-gray-600 py-1 px-1.5 ${
               lineGraphExpanded
-                ? "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[95%] w-[95%] p-4 z-10"
-                : "w-1/2 py-1 px-1.5"
+                ? "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[95%] w-[95%] z-10"
+                : "w-1/2"
             }`}
-            // className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[95%] w-[95%] rounded-xl text-gray-600 flex flex-col p-4 z-10"
             style={{
               backgroundImage:
                 "linear-gradient(to right top, #96adcf, #9eb3d2, #a7b8d5, #afbed8, #b7c4db, #bdcadf, #c2cfe3, #c8d5e7, #ccdced, #d1e4f3, #d6ebf9, #dbf2ff)",
             }}
           >
             {/* top layer */}
-            <div className="flex justify-between items-center text-xs h-[10%]">
-              {/* <div className="border border-black ">Expand</div> */}
+            <div
+              className={`flex justify-between items-center text-xs ${
+                lineGraphExpanded ? "h-[8%]" : "h-[10%]"
+              }`}
+            >
               <div onClick={() => setLineGraphExpanded(!lineGraphExpanded)}>
-                <button class="expand-btn hover:scale-110 duration-200">
-                  <i class="expand-animation"></i>
-                  {lineGraphExpanded ? "Shrink" : "Expand"}
-                  <i class="expand-animation"></i>
+                <button class="expand-button px-4 flex gap-2">
+                  {lineGraphExpanded ? (
+                    <LuShrink className="icon text-[#4B5563] text-lg" />
+                  ) : (
+                    <LuExpand className="icon text-[#4B5563] text-base" />
+                  )}
+                  <span className="expand-text">
+                    {lineGraphExpanded ? "Shrink" : "Expand"}
+                  </span>
                 </button>
               </div>
-              <div className="flex items-center px-2 py-1 text-xs font-medium">
+              <div
+                className={`flex items-center px-2 py-1 font-medium ${
+                  lineGraphExpanded ? "text-base" : "text-xs"
+                }`}
+              >
                 <div className="mr-2">Set Limit:</div>
                 <input
                   type="radio"
@@ -949,7 +968,9 @@ const Dashboard = () => {
               </div>
             </div>
             {/* bottom - line graph layer */}
-            <div className="h-[90%] flex">
+            <div
+              className={`flex ${lineGraphExpanded ? "h-[92%]" : "h-[90%]"}`}
+            >
               {/* slider */}
               <div className="w-[8%] flex justify-center items-center">
                 <ReactSlider
