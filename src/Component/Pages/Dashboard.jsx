@@ -38,11 +38,21 @@ ChartJS.register(
 const Dashboard = () => {
 
   // responsive gauge height
+  // const getGaugeHeight = () => {
+  //   if (window.innerWidth > 1536) {
+  //     return 150;
+  //   }
+  //   return 100;
+  // };
+
   const getGaugeHeight = () => {
-    if (window.innerWidth > 1536) {
+    if(window.innerWidth < 768) {
+      return 75;
+    } else if(window.innerWidth >= 768 && window.innerWidth < 1536) {
+      return 100;
+    } else if(window.innerHeight >= 1536) {
       return 150;
     }
-    return 100;
   };
 
   const [gaugeHeight, setGaugeHeight] = useState(getGaugeHeight());
@@ -616,26 +626,32 @@ const Dashboard = () => {
 
   return (
     <div
-      className="h-screen p-4 text-white 2xl:text-2xl flex flex-col gap-2"
+      className="xl:h-screen p-4 text-white 2xl:text-2xl flex flex-col gap-2"
       style={{
         backgroundImage:
           "linear-gradient(to right, #151c26, #1f2631, #28303c, #333b47, #3d4653, #434d5a, #495362, #4f5a69, #525e6d, #566171, #596576, #5d697a)",
       }}
     >
       {/* background-image: linear-gradient(to right, #61314b, #643550, #663956, #693d5b, #6b4161, #6c4465, #6e486a, #6f4b6e, #704f73, #715377, #72577c, #735b80); */}
-      <div className="h-[14%] flex flex-col justify-center gap-2">
+      <div className="xl:h-[14%] flex flex-col justify-center gap-2">
         {/* top bar */}
-        <div className="flex justify-between">
-          <div className="flex gap-4">
-            <img src={xymaLogo} alt="xymaLogo" className="h-10 2xl:h-14" />
+        <div className="flex justify-between items-center">
+          <div className="flex gap-2 md:gap-4">
+            <img
+              src={xymaLogo}
+              alt="xymaLogo"
+              className="h-8 md:h-10 2xl:h-14"
+            />
             <img
               src={hindalcoLogo}
               alt="hindalcoLogo"
-              className="h-12 2xl:h-16"
+              className="h-10 md:h-12 2xl:h-16"
             />
           </div>
-          <div className="text-2xl font-medium">Temperature Measurement</div>
-          <div className="w-[125px] flex justify-end">
+          <div className="text-sm md:text-2xl font-medium">
+            Temperature&nbsp;Measurement
+          </div>
+          <div className="w-auto md:w-[125px] flex justify-end">
             <Link to="/">
               <button
                 class="logout-button"
@@ -652,7 +668,7 @@ const Dashboard = () => {
         </div>
 
         {/* 2nd layer */}
-        <div className="flex justify-between gap-2">
+        <div className="flex flex-col-reverse md:flex-row justify-between gap-2">
           {/* activity status */}
           <div className="flex gap-4 items-center">
             <div className="rounded-full w-8 h-8 2xl:w-12 2xl:h-12 flex justify-center items-center border border-white">
@@ -662,7 +678,7 @@ const Dashboard = () => {
               Click to see individual sensor data
             </div>
           </div>
-          <div className="flex items-center gap-2 text-sm">
+          <div className="flex items-center justify-between gap-2 text-xs md:text-sm">
             {/* last update */}
             <div className="px-2 py-1 border border-white rounded-xl">
               Last update : 18:35 16-08-2024
@@ -681,123 +697,124 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="relative h-[86%] flex flex-col gap-2">
-        <div className="h-[60%] gap-2 flex ">
-          {/* gauge */}
-          <div className="w-[40%] border border-l-white border-r-white border-t-transparent border-b-transparent rounded-3xl">
-            {/* 1st row */}
-            <div className="h-1/3 flex">
-              <div className="w-1/2 flex">
-                <div className="w-1/2 flex items-center justify-center">
-                  <Chart
-                    chartType="Gauge"
-                    data={gaugeData1}
-                    options={gaugeOptions}
-                  />
+      <div className="relative xl:h-[86%] flex flex-col gap-4 xl:gap-2">
+        <div className="xl:h-[60%] gap-4 xl:gap-2 flex flex-col xl:flex-row">
+          <div className="w-full xl:w-[70%] flex flex-col md:flex-row gap-4 md:gap-2">
+            {/* gauge */}
+            <div className="w-full md:w-[55%] border border-l-white border-r-white border-t-transparent border-b-transparent rounded-3xl">
+              {/* 1st row */}
+              <div className="xl:h-1/3 flex">
+                <div className="w-1/2 flex">
+                  <div className="w-1/2 flex items-center justify-center">
+                    <Chart
+                      chartType="Gauge"
+                      data={gaugeData1}
+                      options={gaugeOptions}
+                    />
+                  </div>
+                  <div className="w-1/2 flex justify-center items-center">
+                    <Chart
+                      chartType="Gauge"
+                      data={gaugeData2}
+                      options={gaugeOptions}
+                    />
+                  </div>
                 </div>
-                <div className="w-1/2 flex justify-center items-center">
-                  <Chart
-                    chartType="Gauge"
-                    data={gaugeData2}
-                    options={gaugeOptions}
-                  />
+
+                <div className="w-1/2 flex">
+                  <div className="w-1/2 flex justify-center items-center">
+                    <Chart
+                      chartType="Gauge"
+                      data={gaugeData3}
+                      options={gaugeOptions}
+                    />
+                  </div>
+                  <div className="w-1/2 flex justify-center items-center">
+                    <Chart
+                      chartType="Gauge"
+                      data={gaugeData4}
+                      options={gaugeOptions}
+                    />
+                  </div>
                 </div>
               </div>
-              <div className="w-1/2 flex">
-                <div className="w-1/2 flex justify-center items-center">
-                  <Chart
-                    chartType="Gauge"
-                    data={gaugeData3}
-                    options={gaugeOptions}
-                  />
+
+              {/* 2nd row */}
+              <div className="h-1/3 flex">
+                <div className="w-1/2 flex">
+                  <div className="w-1/2 flex justify-center items-center">
+                    <Chart
+                      chartType="Gauge"
+                      data={gaugeData5}
+                      options={gaugeOptions}
+                    />
+                  </div>
+                  <div className="w-1/2 flex justify-center items-center">
+                    <Chart
+                      chartType="Gauge"
+                      data={gaugeData6}
+                      options={gaugeOptions}
+                    />
+                  </div>
                 </div>
-                <div className="w-1/2 flex justify-center items-center">
-                  <Chart
-                    chartType="Gauge"
-                    data={gaugeData4}
-                    options={gaugeOptions}
-                  />
+                <div className="w-1/2 flex">
+                  <div className="w-1/2 flex justify-center items-center">
+                    <Chart
+                      chartType="Gauge"
+                      data={gaugeData7}
+                      options={gaugeOptions}
+                    />
+                  </div>
+                  <div className="w-1/2 flex justify-center items-center">
+                    <Chart
+                      chartType="Gauge"
+                      data={gaugeData8}
+                      options={gaugeOptions}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 3rd row */}
+              <div className="h-1/3 flex">
+                <div className="w-1/2 flex">
+                  <div className="w-1/2 flex justify-center items-center">
+                    <Chart
+                      chartType="Gauge"
+                      data={gaugeData9}
+                      options={gaugeOptions}
+                    />
+                  </div>
+                  <div className="w-1/2 flex justify-center items-center">
+                    <Chart
+                      chartType="Gauge"
+                      data={gaugeData10}
+                      options={gaugeOptions}
+                    />
+                  </div>
+                </div>
+                <div className="w-1/2 flex">
+                  <div className="w-1/2 flex justify-center items-center">
+                    <Chart
+                      chartType="Gauge"
+                      data={gaugeData11}
+                      options={gaugeOptions}
+                    />
+                  </div>
+                  <div className="w-1/2 flex justify-center items-center">
+                    <Chart
+                      chartType="Gauge"
+                      data={gaugeData12}
+                      options={gaugeOptions}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* 2nd row */}
-            <div className="h-1/3 flex">
-              <div className="w-1/2 flex">
-                <div className="w-1/2 flex justify-center items-center">
-                  <Chart
-                    chartType="Gauge"
-                    data={gaugeData5}
-                    options={gaugeOptions}
-                  />
-                </div>
-                <div className="w-1/2 flex justify-center items-center">
-                  <Chart
-                    chartType="Gauge"
-                    data={gaugeData6}
-                    options={gaugeOptions}
-                  />
-                </div>
-              </div>
-              <div className="w-1/2 flex">
-                <div className="w-1/2 flex justify-center items-center">
-                  <Chart
-                    chartType="Gauge"
-                    data={gaugeData7}
-                    options={gaugeOptions}
-                  />
-                </div>
-                <div className="w-1/2 flex justify-center items-center">
-                  <Chart
-                    chartType="Gauge"
-                    data={gaugeData8}
-                    options={gaugeOptions}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* 3rd row */}
-            <div className="h-1/3 flex">
-              <div className="w-1/2 flex">
-                <div className="w-1/2 flex justify-center items-center">
-                  <Chart
-                    chartType="Gauge"
-                    data={gaugeData9}
-                    options={gaugeOptions}
-                  />
-                </div>
-                <div className="w-1/2 flex justify-center items-center">
-                  <Chart
-                    chartType="Gauge"
-                    data={gaugeData10}
-                    options={gaugeOptions}
-                  />
-                </div>
-              </div>
-              <div className="w-1/2 flex">
-                <div className="w-1/2 flex justify-center items-center">
-                  <Chart
-                    chartType="Gauge"
-                    data={gaugeData11}
-                    options={gaugeOptions}
-                  />
-                </div>
-                <div className="w-1/2 flex justify-center items-center">
-                  <Chart
-                    chartType="Gauge"
-                    data={gaugeData12}
-                    options={gaugeOptions}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className=" w-[60%] flex gap-2">
             {/* bar chart */}
             <div
-              className=" w-1/2 rounded-xl py-1 px-1.5 text-gray-600"
+              className="w-full md:w-[45%] h-[300px] lg:h-[350px] xl:h-auto rounded-xl py-1 px-1.5 text-gray-600"
               style={{
                 backgroundImage:
                   "linear-gradient(to right top, #96adcf, #9eb3d2, #a7b8d5, #afbed8, #b7c4db, #bdcadf, #c2cfe3, #c8d5e7, #ccdced, #d1e4f3, #d6ebf9, #dbf2ff)",
@@ -805,22 +822,23 @@ const Dashboard = () => {
             >
               <Bar data={barData} options={barOptions} height={"100%"} />
             </div>
-            {/* 3d model */}
-            <div
-              className=" w-1/2 rounded-xl text-gray-600"
-              style={{
-                backgroundImage:
-                  "radial-gradient(circle, #dbf2ff, #d6ebf9, #d1e4f3, #ccdced, #c8d5e7, #c2cfe3, #bdcadf, #b7c4db, #afbed8, #a7b8d5, #9eb3d2, #96adcf)",
-              }}
-            >
-              <ThreeDModel />
-            </div>
+          </div>
+          {/* 3d model */}
+          <div
+            className="w-full xl:w-[30%] h-[300px] lg:h-[400px] xl:h-auto rounded-xl text-gray-600"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle, #dbf2ff, #d6ebf9, #d1e4f3, #ccdced, #c8d5e7, #c2cfe3, #bdcadf, #b7c4db, #afbed8, #a7b8d5, #9eb3d2, #96adcf)",
+            }}
+          >
+            <ThreeDModel />
           </div>
         </div>
-        <div className=" h-[40%] flex gap-2">
+
+        <div className="xl:h-[40%] flex flex-col xl:flex-row gap-4 xl:gap-2">
           {/* table */}
           <div
-            className=" w-1/2 rounded-xl text-gray-600 overflow-auto text-center text-xs"
+            className="w-full xl:w-1/2 h-[300px] lg:h-[400px] xl:h-auto rounded-xl text-gray-600 overflow-auto text-center text-[10px] md:text-xs"
             style={{
               backgroundImage:
                 "linear-gradient(to right top, #96adcf, #9eb3d2, #a7b8d5, #afbed8, #b7c4db, #bdcadf, #c2cfe3, #c8d5e7, #ccdced, #d1e4f3, #d6ebf9, #dbf2ff)",
@@ -885,7 +903,7 @@ const Dashboard = () => {
             className={`rounded-xl text-gray-600 py-1 px-1.5 ${
               lineGraphExpanded
                 ? "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[95%] w-[95%] z-10"
-                : "w-1/2"
+                : "w-full xl:w-1/2 h-[300px] lg:h-[400px] xl:h-auto"
             }`}
             style={{
               backgroundImage:
@@ -898,7 +916,7 @@ const Dashboard = () => {
                 lineGraphExpanded ? "h-[8%]" : "h-[10%]"
               }`}
             >
-              <div onClick={() => setLineGraphExpanded(!lineGraphExpanded)}>
+              <div className='hidden md:block' onClick={() => setLineGraphExpanded(!lineGraphExpanded)}>
                 <button class="expand-button px-4 flex gap-2">
                   {lineGraphExpanded ? (
                     <LuShrink className="icon text-[#4B5563] text-lg" />
