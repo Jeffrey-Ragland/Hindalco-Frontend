@@ -16,6 +16,10 @@ code {
     monospace;
 } */
 
+body {
+  background-image: linear-gradient(to right, #151c26, #1f2631, #28303c, #333b47, #3d4653, #434d5a, #495362, #4f5a69, #525e6d, #566171, #596576, #5d697a);
+}
+
 /* login button -> login page */ 
 .login-button {
  --color: #00a94c;

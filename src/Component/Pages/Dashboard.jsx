@@ -10,6 +10,7 @@ import ChartDataLabels from "chartjs-plugin-datalabels";
 import ThreeDModel from './ThreeDModel';
 import { LuExpand, LuShrink } from "react-icons/lu";
 import { ImExit } from "react-icons/im";
+import { TbDownload } from "react-icons/tb";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -35,22 +36,14 @@ ChartJS.register(
   ChartDataLabels
 );
 
-const Dashboard = () => {
-
-  // responsive gauge height
-  // const getGaugeHeight = () => {
-  //   if (window.innerWidth > 1536) {
-  //     return 150;
-  //   }
-  //   return 100;
-  // };
+const Dashboard = ({dataFromApp}) => {
 
   const getGaugeHeight = () => {
     if(window.innerWidth < 768) {
       return 75;
     } else if(window.innerWidth >= 768 && window.innerWidth < 1536) {
       return 100;
-    } else if(window.innerHeight >= 1536) {
+    } else if(window.innerWidth >= 1536) {
       return 150;
     }
   };
@@ -58,8 +51,18 @@ const Dashboard = () => {
   const [gaugeHeight, setGaugeHeight] = useState(getGaugeHeight());
   const [lineSliderValues, setLineSliderValues] = useState([0, 1000]);
   const [lineGraphExpanded, setLineGraphExpanded] = useState(false);
+  const [gaugeClicked, setGaugeClicked] = useState(false);
+  const [lastData, setLastData] = useState({});
 
-  console.log("line graph expanded :", lineGraphExpanded);
+
+  useEffect(() => {
+    if (dataFromApp.length > 0) {
+      setLastData(dataFromApp[0]);
+    }
+    // console.log("last data", lastData);
+  },[]);
+
+  // console.log('last data', lastData);
 
   useEffect(() => {
     const handleResize = () => {
@@ -70,77 +73,92 @@ const Dashboard = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  const s1 = dataFromApp.length> 0 && parseInt(dataFromApp[0].S1); 
+  const s2 = dataFromApp.length > 0 && parseInt(dataFromApp[0].S2); 
+  const s3 = dataFromApp.length > 0 && parseInt(dataFromApp[0].S3); 
+  const s4 = dataFromApp.length > 0 && parseInt(dataFromApp[0].S4); 
+  const s5 = dataFromApp.length > 0 && parseInt(dataFromApp[0].S5); 
+  const s6 = dataFromApp.length > 0 && parseInt(dataFromApp[0].S6);
+  const s7 = dataFromApp.length > 0 && parseInt(dataFromApp[0].S7);
+  const s8 = dataFromApp.length > 0 && parseInt(dataFromApp[0].S8);
+  const s9 = dataFromApp.length > 0 && parseInt(dataFromApp[0].S9);
+  const s10 = dataFromApp.length > 0 && parseInt(dataFromApp[0].S10);
+  const s11 = dataFromApp.length > 0 && parseInt(dataFromApp[0].S11);
+  const s12 = dataFromApp.length > 0 && parseInt(dataFromApp[0].S12); 
+
+
   // gauge chart
   const gaugeData1 = [
     ["Label", "Value"],
-    ["S1", 80],
+    ["S1", s1]
   ];
 
   const gaugeData2 = [
     ["Label", "Value"],
-    ["S2", 65],
+    ["S2", s2],
   ];
 
   const gaugeData3 = [
     ["Label", "Value"],
-    ["S3", 34],
+    ["S3", s3],
   ];
 
   const gaugeData4 = [
     ["Label", "Value"],
-    ["S4", 59],
+    ["S4", s4],
   ];
 
   const gaugeData5 = [
     ["Label", "Value"],
-    ["S5", 98],
+    ["S5", s5],
   ];
 
   const gaugeData6 = [
     ["Label", "Value"],
-    ["S6", 32],
+    ["S6", s6],
   ];
 
   const gaugeData7 = [
     ["Label", "Value"],
-    ["S7", 45],
+    ["S7", s7],
   ];
 
   const gaugeData8 = [
     ["Label", "Value"],
-    ["S8", 72],
+    ["S8", s8],
   ];
 
   const gaugeData9 = [
     ["Label", "Value"],
-    ["S9", 21],
+    ["S9", s9],
   ];
 
   const gaugeData10 = [
     ["Label", "Value"],
-    ["S10", 60],
+    ["S10", s10],
   ];
 
   const gaugeData11 = [
     ["Label", "Value"],
-    ["S11", 12],
+    ["S11", s11],
   ];
 
   const gaugeData12 = [
     ["Label", "Value"],
-    ["S12", 8],
+    ["S12", s12],
   ];
 
   const gaugeOptions = {
-    // width: 200,
     height: gaugeHeight,
-    greenFrom: 0,
-    greenTo: 30,
-    yellowFrom: 30,
-    yellowTo: 60,
-    redFrom: 60,
-    redTo: 100,
+    // greenFrom: 0,
+    // greenTo: 30,
+    // yellowFrom: 30,
+    // yellowTo: 60,
+    redFrom: 400,
+    redTo: 450,
     minorTicks: 5,
+    min: 0,
+    max: 450
   };
 
   // bar chart
@@ -170,7 +188,6 @@ const Dashboard = () => {
             ? "rgba(255, 0, 0, 0.7)"
             : "rgba(75, 192, 192, 0.6)";
         },
-        //  borderColor: "rgba(75, 192, 192, 1)",
         borderColor: (context) => {
           const value = context.raw;
           const maxValue = Math.max(...context.chart.data.datasets[0].data);
@@ -625,14 +642,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div
-      className="xl:h-screen p-4 text-white 2xl:text-2xl flex flex-col gap-2"
-      style={{
-        backgroundImage:
-          "linear-gradient(to right, #151c26, #1f2631, #28303c, #333b47, #3d4653, #434d5a, #495362, #4f5a69, #525e6d, #566171, #596576, #5d697a)",
-      }}
-    >
-      {/* background-image: linear-gradient(to right, #61314b, #643550, #663956, #693d5b, #6b4161, #6c4465, #6e486a, #6f4b6e, #704f73, #715377, #72577c, #735b80); */}
+    <div className="xl:h-screen p-4 text-white 2xl:text-2xl flex flex-col gap-2">
       <div className="xl:h-[14%] flex flex-col justify-center gap-2">
         {/* top bar */}
         <div className="flex justify-between items-center">
@@ -640,28 +650,28 @@ const Dashboard = () => {
             <img
               src={xymaLogo}
               alt="xymaLogo"
-              className="h-8 md:h-10 2xl:h-14"
+              className="h-8 md:h-12 2xl:h-14"
             />
             <img
               src={hindalcoLogo}
               alt="hindalcoLogo"
-              className="h-10 md:h-12 2xl:h-16"
+              className="h-10 md:h-14 2xl:h-16"
             />
           </div>
-          <div className="text-sm md:text-2xl font-medium">
-            Temperature&nbsp;Measurement
+          <div className="text-sm md:text-2xl font-medium text-center">
+            Temperature Measurement
           </div>
           <div className="w-auto md:w-[125px] flex justify-end">
-            <Link to="/">
+            <Link to="/login">
               <button
-                class="logout-button"
+                className="logout-button"
                 onClick={() => localStorage.clear()}
               >
-                <div class="logout-logo ">
+                <div className="logout-logo ">
                   <ImExit className="text-xl" />
                 </div>
 
-                <div class="logout-text text-lg">Logout</div>
+                <div className="logout-text text-lg">Logout</div>
               </button>
             </Link>
           </div>
@@ -680,18 +690,18 @@ const Dashboard = () => {
           </div>
           <div className="flex items-center justify-between gap-2 text-xs md:text-sm">
             {/* last update */}
-            <div className="px-2 py-1 border border-white rounded-xl">
+            <div className="px-2 py-1 border border-cyan-400 rounded-xl">
               Last update : 18:35 16-08-2024
             </div>
             {/* report */}
             <div
-              className="px-2 py-1 rounded-lg text-[#173baa] font-medium"
+              className="px-2 py-1 rounded-lg text-gray-600 font-medium flex gap-1"
               style={{
                 backgroundImage:
-                  "linear-gradient(to right, #38ba98, #4ec494, #64cd90, #7bd68a, #92de84)",
+                  "linear-gradient(to right, #4bc0c0, #49cccc, #45d9d9, #40e5e5, #3af2f2)",
               }}
             >
-              Report generation
+              Report generation <TbDownload className="text-xl text-red-500" />
             </div>
           </div>
         </div>
@@ -705,35 +715,51 @@ const Dashboard = () => {
               {/* 1st row */}
               <div className="xl:h-1/3 flex">
                 <div className="w-1/2 flex">
-                  <div className="w-1/2 flex items-center justify-center">
+                  <div
+                    className="w-1/2 flex items-center justify-center"
+                    onClick={() => setGaugeClicked(true)}
+                  >
                     <Chart
                       chartType="Gauge"
                       data={gaugeData1}
                       options={gaugeOptions}
+                      className="cursor-pointer"
                     />
                   </div>
-                  <div className="w-1/2 flex justify-center items-center">
+                  <div
+                    className="w-1/2 flex justify-center items-center"
+                    onClick={() => setGaugeClicked(true)}
+                  >
                     <Chart
                       chartType="Gauge"
                       data={gaugeData2}
                       options={gaugeOptions}
+                      className="cursor-pointer"
                     />
                   </div>
                 </div>
 
                 <div className="w-1/2 flex">
-                  <div className="w-1/2 flex justify-center items-center">
+                  <div
+                    className="w-1/2 flex justify-center items-center"
+                    onClick={() => setGaugeClicked(true)}
+                  >
                     <Chart
                       chartType="Gauge"
                       data={gaugeData3}
                       options={gaugeOptions}
+                      className="cursor-pointer"
                     />
                   </div>
-                  <div className="w-1/2 flex justify-center items-center">
+                  <div
+                    className="w-1/2 flex justify-center items-center"
+                    onClick={() => setGaugeClicked(true)}
+                  >
                     <Chart
                       chartType="Gauge"
                       data={gaugeData4}
                       options={gaugeOptions}
+                      className="cursor-pointer"
                     />
                   </div>
                 </div>
@@ -742,34 +768,50 @@ const Dashboard = () => {
               {/* 2nd row */}
               <div className="h-1/3 flex">
                 <div className="w-1/2 flex">
-                  <div className="w-1/2 flex justify-center items-center">
+                  <div
+                    className="w-1/2 flex justify-center items-center"
+                    onClick={() => setGaugeClicked(true)}
+                  >
                     <Chart
                       chartType="Gauge"
                       data={gaugeData5}
                       options={gaugeOptions}
+                      className="cursor-pointer"
                     />
                   </div>
-                  <div className="w-1/2 flex justify-center items-center">
+                  <div
+                    className="w-1/2 flex justify-center items-center"
+                    onClick={() => setGaugeClicked(true)}
+                  >
                     <Chart
                       chartType="Gauge"
                       data={gaugeData6}
                       options={gaugeOptions}
+                      className="cursor-pointer"
                     />
                   </div>
                 </div>
                 <div className="w-1/2 flex">
-                  <div className="w-1/2 flex justify-center items-center">
+                  <div
+                    className="w-1/2 flex justify-center items-center"
+                    onClick={() => setGaugeClicked(true)}
+                  >
                     <Chart
                       chartType="Gauge"
                       data={gaugeData7}
                       options={gaugeOptions}
+                      className="cursor-pointer"
                     />
                   </div>
-                  <div className="w-1/2 flex justify-center items-center">
+                  <div
+                    className="w-1/2 flex justify-center items-center"
+                    onClick={() => setGaugeClicked(true)}
+                  >
                     <Chart
                       chartType="Gauge"
                       data={gaugeData8}
                       options={gaugeOptions}
+                      className="cursor-pointer"
                     />
                   </div>
                 </div>
@@ -778,34 +820,50 @@ const Dashboard = () => {
               {/* 3rd row */}
               <div className="h-1/3 flex">
                 <div className="w-1/2 flex">
-                  <div className="w-1/2 flex justify-center items-center">
+                  <div
+                    className="w-1/2 flex justify-center items-center"
+                    onClick={() => setGaugeClicked(true)}
+                  >
                     <Chart
                       chartType="Gauge"
                       data={gaugeData9}
                       options={gaugeOptions}
+                      className="cursor-pointer"
                     />
                   </div>
-                  <div className="w-1/2 flex justify-center items-center">
+                  <div
+                    className="w-1/2 flex justify-center items-center"
+                    onClick={() => setGaugeClicked(true)}
+                  >
                     <Chart
                       chartType="Gauge"
                       data={gaugeData10}
                       options={gaugeOptions}
+                      className="cursor-pointer"
                     />
                   </div>
                 </div>
                 <div className="w-1/2 flex">
-                  <div className="w-1/2 flex justify-center items-center">
+                  <div
+                    className="w-1/2 flex justify-center items-center"
+                    onClick={() => setGaugeClicked(true)}
+                  >
                     <Chart
                       chartType="Gauge"
                       data={gaugeData11}
                       options={gaugeOptions}
+                      className="cursor-pointer"
                     />
                   </div>
-                  <div className="w-1/2 flex justify-center items-center">
+                  <div
+                    className="w-1/2 flex justify-center items-center"
+                    onClick={() => setGaugeClicked(true)}
+                  >
                     <Chart
                       chartType="Gauge"
                       data={gaugeData12}
                       options={gaugeOptions}
+                      className="cursor-pointer"
                     />
                   </div>
                 </div>
@@ -916,8 +974,11 @@ const Dashboard = () => {
                 lineGraphExpanded ? "h-[8%]" : "h-[10%]"
               }`}
             >
-              <div className='hidden md:block' onClick={() => setLineGraphExpanded(!lineGraphExpanded)}>
-                <button class="expand-button px-4 flex gap-2">
+              <div
+                className="hidden md:block"
+                onClick={() => setLineGraphExpanded(!lineGraphExpanded)}
+              >
+                <button className="expand-button px-4 flex gap-2">
                   {lineGraphExpanded ? (
                     <LuShrink className="icon text-[#4B5563] text-lg" />
                   ) : (
@@ -998,9 +1059,14 @@ const Dashboard = () => {
                   min={0}
                   max={1000}
                   defaultValue={[0, 250]}
-                  renderThumb={(props, state) => (
-                    <div {...props}>{state.valueNow}</div>
-                  )}
+                  renderThumb={(props, state) => {
+                    const { key, ...restProps } = props;
+                    return (
+                      <div key={key} {...restProps}>
+                        {state.valueNow}
+                      </div>
+                    );
+                  }}
                   pearling
                   minDistance={5}
                   orientation="vertical"
@@ -1014,9 +1080,26 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+        {gaugeClicked && (
+          <div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[95%] w-[95%] rounded-xl text-gray-600 py-1 px-1.5 z-10"
+            style={{
+              backgroundImage:
+                "linear-gradient(to right top, #96adcf, #9eb3d2, #a7b8d5, #afbed8, #b7c4db, #bdcadf, #c2cfe3, #c8d5e7, #ccdced, #d1e4f3, #d6ebf9, #dbf2ff)",
+            }}
+          >
+            <button
+              className="border border-black"
+              onClick={() => setGaugeClicked(false)}
+            >
+              close
+            </button>
+            individual sensor content
+          </div>
+        )}
       </div>
       {/* overlay */}
-      {lineGraphExpanded && (
+      {(lineGraphExpanded || gaugeClicked) && (
         <div className="absolute inset-0 h-full w-full bg-black/50 " />
       )}
     </div>
