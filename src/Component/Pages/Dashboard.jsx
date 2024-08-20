@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import {Link} from 'react-router-dom';
 import xymaLogo from '../Assets/xymaLogoWhite.png';
 import hindalcoLogo from '../Assets/hindalcoLogo.png';
+import LineChartCanvas from './LineChartCanvas';
 import ReactSlider from 'react-slider';
 import {Chart} from 'react-google-charts';
 import {Bar, Line} from 'react-chartjs-2';
@@ -38,6 +39,8 @@ ChartJS.register(
 
 const Dashboard = ({dataFromApp}) => {
 
+  console.log('data from app', dataFromApp);
+
   const getGaugeHeight = () => {
     if(window.innerWidth < 768) {
       return 75;
@@ -49,21 +52,30 @@ const Dashboard = ({dataFromApp}) => {
   };
 
   const [gaugeHeight, setGaugeHeight] = useState(getGaugeHeight());
-  const [lineSliderValues, setLineSliderValues] = useState([0, 1000]);
+  const [lineSliderValues, setLineSliderValues] = useState([0, 450]);
   const [lineGraphExpanded, setLineGraphExpanded] = useState(false);
   const [gaugeClicked, setGaugeClicked] = useState(false);
-  const [lastData, setLastData] = useState({});
 
+  const [lineData, setLineData] = useState({
+    labels: [],
+    datasets: [],
+  });
 
-  useEffect(() => {
-    if (dataFromApp.length > 0) {
-      setLastData(dataFromApp[0]);
-    }
-    // console.log("last data", lastData);
-  },[]);
+  // line chart limit
+  const getInitialLimit = () => {
+    const storedLimit = localStorage.getItem('HindalcoLimit');
+    return storedLimit ? parseInt(storedLimit) : 100;
+  };
 
-  // console.log('last data', lastData);
+  const [hindalcoLimit, setHindalcoLimit] = useState(getInitialLimit);
 
+  const handleLineLimit = (e) => {
+    const limit = parseInt(e.target.value);
+    setHindalcoLimit(limit);
+    localStorage.setItem('HindalcoLimit', limit.toString());
+  };
+
+  // responsive gauge chart
   useEffect(() => {
     const handleResize = () => {
       setGaugeHeight(getGaugeHeight());
@@ -85,7 +97,6 @@ const Dashboard = ({dataFromApp}) => {
   const s10 = dataFromApp.length > 0 && parseInt(dataFromApp[0].S10);
   const s11 = dataFromApp.length > 0 && parseInt(dataFromApp[0].S11);
   const s12 = dataFromApp.length > 0 && parseInt(dataFromApp[0].S12); 
-
 
   // gauge chart
   const gaugeData1 = [
@@ -150,15 +161,11 @@ const Dashboard = ({dataFromApp}) => {
 
   const gaugeOptions = {
     height: gaugeHeight,
-    // greenFrom: 0,
-    // greenTo: 30,
-    // yellowFrom: 30,
-    // yellowTo: 60,
-    redFrom: 400,
-    redTo: 450,
+    redFrom: 200,
+    redTo: 250,
     minorTicks: 5,
     min: 0,
-    max: 450
+    max: 250
   };
 
   // bar chart
@@ -180,18 +187,31 @@ const Dashboard = ({dataFromApp}) => {
     datasets: [
       {
         label: "Temperature",
-        data: [65, 59, 80, 81, 56, 55, 76, 43, 21, 70, 84, 32],
+        data: [
+          dataFromApp.length > 0 && dataFromApp[0].S1,
+          dataFromApp.length > 0 && dataFromApp[0].S2,
+          dataFromApp.length > 0 && dataFromApp[0].S3,
+          dataFromApp.length > 0 && dataFromApp[0].S4,
+          dataFromApp.length > 0 && dataFromApp[0].S5,
+          dataFromApp.length > 0 && dataFromApp[0].S6,
+          dataFromApp.length > 0 && dataFromApp[0].S7,
+          dataFromApp.length > 0 && dataFromApp[0].S8,
+          dataFromApp.length > 0 && dataFromApp[0].S9,
+          dataFromApp.length > 0 && dataFromApp[0].S10,
+          dataFromApp.length > 0 && dataFromApp[0].S11,
+          dataFromApp.length > 0 && dataFromApp[0].S12,
+        ],
         backgroundColor: (context) => {
           const value = context.raw;
           const maxValue = Math.max(...context.chart.data.datasets[0].data);
-          return value === maxValue
+          return parseInt(value) === maxValue
             ? "rgba(255, 0, 0, 0.7)"
-            : "rgba(75, 192, 192, 0.6)";
+            : "rgba(140, 72, 109, 0.3)";
         },
         borderColor: (context) => {
           const value = context.raw;
           const maxValue = Math.max(...context.chart.data.datasets[0].data);
-          return value === maxValue ? "red" : "rgba(75, 192, 192)";
+          return parseInt(value) === maxValue ? "darkred" : "rgba(140, 72, 109)";
         },
         borderWidth: 1,
         barPercentage: 1,
@@ -246,352 +266,130 @@ const Dashboard = ({dataFromApp}) => {
     },
   };
 
-  // Static data for the table
-  const tableData = [
-    {
-      sNo: 1,
-      s1: 45,
-      s2: 67,
-      s3: 23,
-      s4: 89,
-      s5: 54,
-      s6: 12,
-      s7: 78,
-      s8: 43,
-      s9: 65,
-      s10: 90,
-      s11: 34,
-      s12: 77,
-      lastUpdated: "2024-08-17T10:00:00Z",
-    },
-    {
-      sNo: 2,
-      s1: 23,
-      s2: 56,
-      s3: 34,
-      s4: 78,
-      s5: 67,
-      s6: 89,
-      s7: 21,
-      s8: 45,
-      s9: 54,
-      s10: 76,
-      s11: 12,
-      s12: 43,
-      lastUpdated: "2024-08-16T10:00:00Z",
-    },
-    {
-      sNo: 3,
-      s1: 78,
-      s2: 34,
-      s3: 56,
-      s4: 23,
-      s5: 89,
-      s6: 67,
-      s7: 12,
-      s8: 90,
-      s9: 43,
-      s10: 21,
-      s11: 76,
-      s12: 54,
-      lastUpdated: "2024-08-15T10:00:00Z",
-    },
-    {
-      sNo: 4,
-      s1: 12,
-      s2: 78,
-      s3: 45,
-      s4: 56,
-      s5: 21,
-      s6: 89,
-      s7: 34,
-      s8: 67,
-      s9: 76,
-      s10: 90,
-      s11: 43,
-      s12: 23,
-      lastUpdated: "2024-08-14T10:00:00Z",
-    },
-    {
-      sNo: 5,
-      s1: 67,
-      s2: 12,
-      s3: 78,
-      s4: 34,
-      s5: 90,
-      s6: 21,
-      s7: 56,
-      s8: 43,
-      s9: 89,
-      s10: 23,
-      s11: 54,
-      s12: 76,
-      lastUpdated: "2024-08-13T10:00:00Z",
-    },
-    {
-      sNo: 6,
-      s1: 34,
-      s2: 89,
-      s3: 23,
-      s4: 45,
-      s5: 67,
-      s6: 12,
-      s7: 78,
-      s8: 90,
-      s9: 21,
-      s10: 54,
-      s11: 76,
-      s12: 43,
-      lastUpdated: "2024-08-12T10:00:00Z",
-    },
-    {
-      sNo: 7,
-      s1: 90,
-      s2: 21,
-      s3: 67,
-      s4: 78,
-      s5: 56,
-      s6: 34,
-      s7: 12,
-      s8: 23,
-      s9: 45,
-      s10: 89,
-      s11: 43,
-      s12: 76,
-      lastUpdated: "2024-08-11T10:00:00Z",
-    },
-    {
-      sNo: 8,
-      s1: 21,
-      s2: 90,
-      s3: 78,
-      s4: 12,
-      s5: 34,
-      s6: 45,
-      s7: 67,
-      s8: 89,
-      s9: 23,
-      s10: 76,
-      s11: 54,
-      s12: 12,
-      lastUpdated: "2024-08-10T10:00:00Z",
-    },
-    {
-      sNo: 9,
-      s1: 45,
-      s2: 34,
-      s3: 12,
-      s4: 90,
-      s5: 78,
-      s6: 56,
-      s7: 89,
-      s8: 21,
-      s9: 67,
-      s10: 23,
-      s11: 12,
-      s12: 54,
-      lastUpdated: "2024-08-09T10:00:00Z",
-    },
-    {
-      sNo: 10,
-      s1: 56,
-      s2: 45,
-      s3: 67,
-      s4: 21,
-      s5: 23,
-      s6: 90,
-      s7: 34,
-      s8: 12,
-      s9: 78,
-      s10: 89,
-      s11: 76,
-      s12: 43,
-      lastUpdated: "2024-08-08T10:00:00Z",
-    },
-    {
-      sNo: 11,
-      s1: 56,
-      s2: 45,
-      s3: 67,
-      s4: 21,
-      s5: 23,
-      s6: 90,
-      s7: 34,
-      s8: 12,
-      s9: 78,
-      s10: 89,
-      s11: 76,
-      s12: 43,
-      lastUpdated: "2024-08-08T10:00:00Z",
-    },
-    {
-      sNo: 12,
-      s1: 56,
-      s2: 45,
-      s3: 67,
-      s4: 21,
-      s5: 23,
-      s6: 90,
-      s7: 34,
-      s8: 12,
-      s9: 78,
-      s10: 89,
-      s11: 76,
-      s12: 43,
-      lastUpdated: "2024-08-08T10:00:00Z",
-    },
-    {
-      sNo: 13,
-      s1: 56,
-      s2: 45,
-      s3: 67,
-      s4: 21,
-      s5: 23,
-      s6: 90,
-      s7: 34,
-      s8: 12,
-      s9: 78,
-      s10: 89,
-      s11: 76,
-      s12: 43,
-      lastUpdated: "2024-08-08T10:00:00Z",
-    },
-    {
-      sNo: 14,
-      s1: 56,
-      s2: 45,
-      s3: 67,
-      s4: 21,
-      s5: 23,
-      s6: 90,
-      s7: 34,
-      s8: 12,
-      s9: 78,
-      s10: 89,
-      s11: 76,
-      s12: 43,
-      lastUpdated: "2024-08-08T10:00:00Z",
-    },
-    {
-      sNo: 15,
-      s1: 56,
-      s2: 45,
-      s3: 67,
-      s4: 21,
-      s5: 23,
-      s6: 90,
-      s7: 34,
-      s8: 12,
-      s9: 78,
-      s10: 89,
-      s11: 76,
-      s12: 43,
-      lastUpdated: "2024-08-08T10:00:00Z",
-    },
+  // line chart data
+
+  const data = [
+    { x: 1, y: 10 },
+    { x: 2, y: 15 },
+    { x: 3, y: 25 },
+    { x: 4, y: 30 },
   ];
 
-  const lineData = {
-    labels: Array.from({ length: 12 }, (_, i) => `Data ${i + 1}`),
-    datasets: [
-      {
-        label: "s1",
-        data: [65, 59, 80, 81, 56, 55, 76, 43, 21, 70, 84, 32],
-        borderColor: "rgba(204, 0, 0, 1)",
-        backgroundColor: "rgba(204, 0, 0, 0.2)",
-        fill: false,
-        tension: 0.4,
-      },
-      {
-        label: "s2",
-        data: [56, 55, 76, 43, 21, 70, 80, 90, 100, 10, 21, 70],
-        borderColor: "rgba(0, 0, 204, 1)",
-        backgroundColor: "rgba(0, 0, 204, 0.2)",
-        fill: false,
-        tension: 0.4,
-      },
-      {
-        label: "s3",
-        data: [45, 89, 67, 34, 78, 90, 12, 55, 66, 77, 83, 21],
-        borderColor: "rgba(0, 204, 0, 1)",
-        backgroundColor: "rgba(0, 204, 0, 0.2)",
-        fill: false,
-        tension: 0.4,
-      },
-      {
-        label: "s4",
-        data: [32, 48, 90, 77, 65, 53, 70, 86, 99, 40, 28, 62],
-        borderColor: "rgba(204, 204, 0, 1)",
-        backgroundColor: "rgba(204, 204, 0, 0.2)",
-        fill: false,
-        tension: 0.4,
-      },
-      {
-        label: "s5",
-        data: [88, 62, 79, 45, 23, 67, 85, 91, 34, 53, 80, 70],
-        borderColor: "rgba(204, 132, 0, 1)",
-        backgroundColor: "rgba(204, 132, 0, 0.2)",
-        fill: false,
-        tension: 0.4,
-      },
-      {
-        label: "s6",
-        data: [71, 84, 56, 34, 67, 89, 43, 52, 74, 91, 39, 63],
-        borderColor: "rgba(102, 0, 102, 1)",
-        backgroundColor: "rgba(102, 0, 102, 0.2)",
-        fill: false,
-        tension: 0.4,
-      },
-      {
-        label: "s7",
-        data: [99, 82, 61, 45, 56, 77, 34, 90, 64, 51, 72, 88],
-        borderColor: "rgba(0, 204, 204, 1)",
-        backgroundColor: "rgba(0, 204, 204, 0.2)",
-        fill: false,
-        tension: 0.4,
-      },
-      {
-        label: "s8",
-        data: [12, 34, 56, 78, 90, 23, 45, 67, 89, 34, 76, 80],
-        borderColor: "rgba(204, 0, 204, 1)",
-        backgroundColor: "rgba(204, 0, 204, 0.2)",
-        fill: false,
-        tension: 0.4,
-      },
-      {
-        label: "s9",
-        data: [56, 78, 90, 45, 34, 12, 67, 89, 23, 76, 80, 54],
-        borderColor: "rgba(204, 153, 162, 1)",
-        backgroundColor: "rgba(204, 153, 162, 0.2)",
-        fill: false,
-        tension: 0.4,
-      },
-      {
-        label: "s10",
-        data: [45, 67, 89, 23, 54, 76, 90, 12, 34, 67, 89, 45],
-        borderColor: "rgba(132, 34, 34, 1)",
-        backgroundColor: "rgba(132, 34, 34, 0.2)",
-        fill: false,
-        tension: 0.4,
-      },
-      {
-        label: "s11",
-        data: [78, 90, 23, 56, 45, 89, 12, 34, 67, 76, 90, 54],
-        borderColor: "rgba(0, 102, 102, 1)",
-        backgroundColor: "rgba(0, 102, 102, 0.2)",
-        fill: false,
-        tension: 0.4,
-      },
-      {
-        label: "s12",
-        data: [34, 56, 78, 90, 23, 45, 67, 89, 12, 76, 90, 54],
-        borderColor: "rgba(0, 204, 0, 1)",
-        backgroundColor: "rgba(0, 204, 0, 0.2)",
-        fill: false,
-        tension: 0.4,
-      },
-    ],
-  };
+  useEffect(() => {
+    if(dataFromApp.length > 0) {
+      const reversedData = [...dataFromApp].reverse();
 
+      const lineLabels = reversedData.map((item) => {
+        const createdAt = new Date(item.createdAt).toLocaleString("en-GB");
+        return createdAt;
+      });
+
+      const sensor1Data = reversedData.map((item) => item.S1);
+      const sensor2Data = reversedData.map((item) => item.S2);
+      const sensor3Data = reversedData.map((item) => item.S3);
+      const sensor4Data = reversedData.map((item) => item.S4);
+      const sensor5Data = reversedData.map((item) => item.S5);
+      const sensor6Data = reversedData.map((item) => item.S6);
+      const sensor7Data = reversedData.map((item) => item.S7);
+      const sensor8Data = reversedData.map((item) => item.S8);
+      const sensor9Data = reversedData.map((item) => item.S9);
+      const sensor10Data = reversedData.map((item) => item.S10);
+      const sensor11Data = reversedData.map((item) => item.S11);
+      const sensor12Data = reversedData.map((item) => item.S12);
+
+      setLineData({
+        labels: lineLabels,
+        datasets: [
+          {
+            label: "s1",
+            data: sensor1Data,
+            borderColor: "rgba(204, 0, 0, 1)",
+            backgroundColor: "rgba(204, 0, 0, 0.2)",
+            tension: 0.4,
+          },
+          {
+            label: "s2",
+            data: sensor2Data,
+            borderColor: "rgba(0, 0, 204, 1)",
+            backgroundColor: "rgba(0, 0, 204, 0.2)",
+            tension: 0.4,
+          },
+          {
+            label: "s3",
+            data: sensor3Data,
+            borderColor: "rgba(0, 204, 0, 1)",
+            backgroundColor: "rgba(0, 204, 0, 0.2)",
+            tension: 0.4,
+          },
+          {
+            label: "s4",
+            data: sensor4Data,
+            borderColor: "rgba(204, 204, 0, 1)",
+            backgroundColor: "rgba(204, 204, 0, 0.2)",
+            tension: 0.4,
+          },
+          {
+            label: "s5",
+            data: sensor5Data,
+            borderColor: "rgba(204, 132, 0, 1)",
+            backgroundColor: "rgba(204, 132, 0, 0.2)",
+            tension: 0.4,
+          },
+          {
+            label: "s6",
+            data: sensor6Data,
+            borderColor: "rgba(102, 0, 102, 1)",
+            backgroundColor: "rgba(102, 0, 102, 0.2)",
+            tension: 0.4,
+          },
+          {
+            label: "s7",
+            data: sensor7Data,
+            borderColor: "rgba(0, 204, 204, 1)",
+            backgroundColor: "rgba(0, 204, 204, 0.2)",
+            tension: 0.4,
+          },
+          {
+            label: "s8",
+            data: sensor8Data,
+            borderColor: "rgba(204, 0, 204, 1)",
+            backgroundColor: "rgba(204, 0, 204, 0.2)",
+            tension: 0.4,
+          },
+          {
+            label: "s9",
+            data: sensor9Data,
+            borderColor: "rgba(204, 153, 162, 1)",
+            backgroundColor: "rgba(204, 153, 162, 0.2)",
+            tension: 0.4,
+          },
+          {
+            label: "s10",
+            data: sensor10Data,
+            borderColor: "rgba(132, 34, 34, 1)",
+            backgroundColor: "rgba(132, 34, 34, 0.2)",
+            tension: 0.4,
+          },
+          {
+            label: "s11",
+            data: sensor11Data,
+            borderColor: "rgba(0, 102, 102, 1)",
+            backgroundColor: "rgba(0, 102, 102, 0.2)",
+            tension: 0.4,
+          },
+          {
+            label: "s12",
+            data: sensor12Data,
+            borderColor: "rgba(0, 204, 0, 1)",
+            backgroundColor: "rgba(0, 204, 0, 0.2)",
+            tension: 0.4,
+          },
+        ],
+      });
+
+    }
+  })
+  
   const lineOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -624,7 +422,7 @@ const Dashboard = ({dataFromApp}) => {
         ticks: {
           color: "#4B5563",
           font: {
-            size: 8,
+            size: 5,
           },
         },
       },
@@ -690,18 +488,23 @@ const Dashboard = ({dataFromApp}) => {
           </div>
           <div className="flex items-center justify-between gap-2 text-xs md:text-sm">
             {/* last update */}
-            <div className="px-2 py-1 border border-cyan-400 rounded-xl">
-              Last update : 18:35 16-08-2024
+            <div className="px-2 py-1 border border-white rounded-xl flex gap-1">
+              <div className="font-medium">Last update:</div>
+              <div>
+                {dataFromApp.length > 0 &&
+                  new Date(dataFromApp[0].createdAt).toLocaleString("en-GB")}
+              </div>
             </div>
             {/* report */}
             <div
-              className="px-2 py-1 rounded-lg text-gray-600 font-medium flex gap-1"
+              className="px-2 py-1 rounded-lg text-white font-medium flex gap-1 border border-white"
               style={{
                 backgroundImage:
-                  "linear-gradient(to right, #4bc0c0, #49cccc, #45d9d9, #40e5e5, #3af2f2)",
+                  "linear-gradient(to right, #5c2f47, #6a3e5c, #784e71, #845f88, #8f719f)",
               }}
             >
-              Report generation <TbDownload className="text-xl text-red-500" />
+              {/* background-image: linear-gradient(to right, #5c2f47, #6a3e5c, #784e71, #845f88, #8f719f); */}
+              Report generation <TbDownload className="text-xl " />
             </div>
           </div>
         </div>
@@ -901,15 +704,15 @@ const Dashboard = ({dataFromApp}) => {
               backgroundImage:
                 "linear-gradient(to right top, #96adcf, #9eb3d2, #a7b8d5, #afbed8, #b7c4db, #bdcadf, #c2cfe3, #c8d5e7, #ccdced, #d1e4f3, #d6ebf9, #dbf2ff)",
               scrollbarWidth: "thin",
-              scrollbarColor: "#4bc0c0 transparent",
+              scrollbarColor: "#8c486d transparent",
             }}
           >
             <table className="w-full">
               <thead
-                className="sticky top-0 text-gray-600"
+                className="sticky top-0 text-white"
                 style={{
                   backgroundImage:
-                    "linear-gradient(to right, #4bc0c0, #49cccc, #45d9d9, #40e5e5, #3af2f2)",
+                    "linear-gradient(to right, #5c2f47, #6a3e5c, #784e71, #845f88, #8f719f)",
                 }}
               >
                 <tr>
@@ -933,26 +736,35 @@ const Dashboard = ({dataFromApp}) => {
               </thead>
 
               <tbody>
-                {tableData.map((row) => (
-                  <tr key={row.sNo}>
-                    <td className="border border-gray-500">{row.sNo}</td>
-                    <td className="border border-gray-500">{row.s1}</td>
-                    <td className="border border-gray-500">{row.s2}</td>
-                    <td className="border border-gray-500">{row.s3}</td>
-                    <td className="border border-gray-500">{row.s4}</td>
-                    <td className="border border-gray-500">{row.s5}</td>
-                    <td className="border border-gray-500">{row.s6}</td>
-                    <td className="border border-gray-500">{row.s7}</td>
-                    <td className="border border-gray-500">{row.s8}</td>
-                    <td className="border border-gray-500">{row.s9}</td>
-                    <td className="border border-gray-500">{row.s10}</td>
-                    <td className="border border-gray-500">{row.s11}</td>
-                    <td className="border border-gray-500">{row.s12}</td>
-                    <td className="border border-gray-500">
-                      {row.lastUpdated}
-                    </td>
-                  </tr>
-                ))}
+                {dataFromApp.length > 0 &&
+                  dataFromApp.map((data, index) => (
+                    <tr
+                      key={index}
+                      className={`${
+                        index % 2 === 0
+                          ? ""
+                          : "bg-gradient-to-r from-[#89a7d2] via-[#a1b7dd] to-[#b0c8e8]"
+                      }`}
+                    >
+                      {/* background-image: linear-gradient(to right, #89a7d2, #8fabd5, #95afd8, #9bb3da, #a1b7dd, #a5bbe0, #a9bfe2, #adc3e5, #b0c8e8, #b4cceb, #b7d1ee, #bbd5f1); */}
+                      <td className="border border-gray-500">{index + 1}</td>
+                      <td className="border border-gray-500">{data.S1}</td>
+                      <td className="border border-gray-500">{data.S2}</td>
+                      <td className="border border-gray-500">{data.S3}</td>
+                      <td className="border border-gray-500">{data.S4}</td>
+                      <td className="border border-gray-500">{data.S5}</td>
+                      <td className="border border-gray-500">{data.S6}</td>
+                      <td className="border border-gray-500">{data.S7}</td>
+                      <td className="border border-gray-500">{data.S8}</td>
+                      <td className="border border-gray-500">{data.S9}</td>
+                      <td className="border border-gray-500">{data.S10}</td>
+                      <td className="border border-gray-500">{data.S11}</td>
+                      <td className="border border-gray-500">{data.S12}</td>
+                      <td className="text-xs border border-gray-400">
+                        {new Date(data.createdAt).toLocaleString("en-GB")}
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
@@ -980,9 +792,9 @@ const Dashboard = ({dataFromApp}) => {
               >
                 <button className="expand-button px-4 flex gap-2">
                   {lineGraphExpanded ? (
-                    <LuShrink className="icon text-[#4B5563] text-lg" />
+                    <LuShrink className="icon text-white text-lg" />
                   ) : (
-                    <LuExpand className="icon text-[#4B5563] text-base" />
+                    <LuExpand className="icon text-white text-base" />
                   )}
                   <span className="expand-text">
                     {lineGraphExpanded ? "Shrink" : "Expand"}
@@ -1000,10 +812,9 @@ const Dashboard = ({dataFromApp}) => {
                   id="option1"
                   name="options"
                   value={100}
-                  defaultChecked
-                  // checked={utmapsLineLimit === 100}
+                  checked={hindalcoLimit === 100}
                   className="cursor-pointer"
-                  // onChange={handleLineLimit}
+                  onChange={handleLineLimit}
                 />
                 <label htmlFor="option1" className="mr-2 cursor-pointer">
                   100
@@ -1013,9 +824,9 @@ const Dashboard = ({dataFromApp}) => {
                   id="option2"
                   name="options"
                   value={300}
-                  // checked={utmapsLineLimit === 500}
+                  checked={hindalcoLimit === 300}
                   className="cursor-pointer"
-                  // onChange={handleLineLimit}
+                  onChange={handleLineLimit}
                 />
                 <label htmlFor="option2" className="mr-2 cursor-pointer">
                   300
@@ -1025,9 +836,9 @@ const Dashboard = ({dataFromApp}) => {
                   id="option3"
                   name="options"
                   value={500}
-                  // checked={utmapsLineLimit === 1000}
+                  checked={hindalcoLimit === 500}
                   className="cursor-pointer"
-                  // onChange={handleLineLimit}
+                  onChange={handleLineLimit}
                 />
                 <label htmlFor="option3" className="mr-2 cursor-pointer">
                   500
@@ -1037,9 +848,9 @@ const Dashboard = ({dataFromApp}) => {
                   id="option4"
                   name="options"
                   value={1000}
-                  // checked={utmapsLineLimit === 1500}
+                  checked={hindalcoLimit === 1000}
                   className="cursor-pointer"
-                  // onChange={handleLineLimit}
+                  onChange={handleLineLimit}
                 />
                 <label htmlFor="option4" className="mr-2 cursor-pointer">
                   1000
@@ -1054,11 +865,11 @@ const Dashboard = ({dataFromApp}) => {
               <div className="w-[8%] flex justify-center items-center">
                 <ReactSlider
                   className="w-10 h-[94%] flex justify-center items-center "
-                  thumbClassName="w-6 h-6 bg-[#4bc0c0] rounded-full flex items-center justify-center cursor-pointer text-gray-600 font-bold text-[10px] hover:scale-110 border border-gray-600 duration-200 focus:outline-none"
+                  thumbClassName="w-6 h-6 bg-[#6e3855] rounded-full flex items-center justify-center cursor-pointer text-white font-bold text-[10px] hover:scale-110 border border-white duration-200 focus:outline-none"
                   trackClassName="w-0.5 rounded-full bg-red-600"
                   min={0}
                   max={1000}
-                  defaultValue={[0, 250]}
+                  defaultValue={[0, 450]}
                   renderThumb={(props, state) => {
                     const { key, ...restProps } = props;
                     return (
@@ -1075,7 +886,8 @@ const Dashboard = ({dataFromApp}) => {
                 />
               </div>
               <div className="w-[92%] ">
-                <Line data={lineData} options={lineOptions} width={"100%"} />
+                {/* <Line data={lineData} options={lineOptions} width={"100%"} /> */}
+                <LineChartCanvas data={data} />
               </div>
             </div>
           </div>

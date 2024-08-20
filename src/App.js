@@ -3,6 +3,7 @@ import Login from './Component/Pages/Login';
 import Dashboard from './Component/Pages/Dashboard';
 import { Route, Routes } from 'react-router-dom';
 import ProtectedRoute from './Component/Pages/ProtectedRoute';
+import Map from './Component/Pages/Map';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 
@@ -40,7 +41,8 @@ const App = () => {
   const getHindalcoData = async() => {
     try {
       const hindalcoLimit = localStorage.getItem('HindalcoLimit');
-      const response = await axios.get(`http://localhost:4000/backend/getHindalcoData?${hindalcoLimit}`);
+      console.log('localstorage', hindalcoLimit);
+      const response = await axios.get(`http://localhost:4000/backend/getHindalcoData?limit=${hindalcoLimit}`);
       if(response.data.success) {
         setHindalcoData(response.data.data);
       } else {
@@ -54,9 +56,10 @@ const App = () => {
   return (
     <>
       <Routes>
-        <Route path='/login' element={<Login />}/>
-        <Route path='/' element={<ProtectedRoute />}>
-          <Route index element={<Dashboard dataFromApp={hindalcoData}/>} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<ProtectedRoute />}>
+          <Route index element={<Dashboard dataFromApp={hindalcoData} />} />
+          <Route path="map" element={<Map dataFromApp={hindalcoData} />} />
         </Route>
       </Routes>
     </>
