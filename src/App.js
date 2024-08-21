@@ -41,7 +41,7 @@ const App = () => {
   const getHindalcoData = async() => {
     try {
       const hindalcoLimit = localStorage.getItem('HindalcoLimit');
-      console.log('localstorage', hindalcoLimit);
+      // console.log('localstorage', hindalcoLimit);
       const response = await axios.get(`http://localhost:4000/backend/getHindalcoData?limit=${hindalcoLimit}`);
       if(response.data.success) {
         setHindalcoData(response.data.data);
@@ -59,7 +59,7 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<ProtectedRoute />}>
           <Route index element={<Dashboard dataFromApp={hindalcoData} />} />
-          <Route path="map" element={<Map dataFromApp={hindalcoData} />} />
+          <Route path="map" element={<Map />} />
         </Route>
       </Routes>
     </>

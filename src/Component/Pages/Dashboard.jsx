@@ -12,6 +12,11 @@ import ThreeDModel from './ThreeDModel';
 import { LuExpand, LuShrink } from "react-icons/lu";
 import { ImExit } from "react-icons/im";
 import { TbDownload } from "react-icons/tb";
+import { MdSystemSecurityUpdateWarning } from "react-icons/md";
+import { BsDatabaseFillCheck } from "react-icons/bs";
+import 'react-tooltip/dist/react-tooltip.css';
+import axios from 'axios';
+import {Tooltip as ReactTooltip} from 'react-tooltip';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -39,7 +44,7 @@ ChartJS.register(
 
 const Dashboard = ({dataFromApp}) => {
 
-  console.log('data from app', dataFromApp);
+  // console.log('data from app', dataFromApp);
 
   const getGaugeHeight = () => {
     if(window.innerWidth < 768) {
@@ -55,6 +60,10 @@ const Dashboard = ({dataFromApp}) => {
   const [lineSliderValues, setLineSliderValues] = useState([0, 450]);
   const [lineGraphExpanded, setLineGraphExpanded] = useState(false);
   const [gaugeClicked, setGaugeClicked] = useState(false);
+  const [activityStatus, setActivityStatus] = useState('');
+  const [selectedGauge, setSelectedGauge] = useState('');
+  const [datepickerSensorFromDate, setDatepickerSensorFromDate] = useState('');
+  const [datepickerSensorToDate, setDatepickerSensorToDate] = useState('');
 
   const [lineData, setLineData] = useState({
     labels: [],
@@ -85,18 +94,18 @@ const Dashboard = ({dataFromApp}) => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const s1 = dataFromApp.length> 0 && parseInt(dataFromApp[0].S1); 
-  const s2 = dataFromApp.length > 0 && parseInt(dataFromApp[0].S2); 
-  const s3 = dataFromApp.length > 0 && parseInt(dataFromApp[0].S3); 
-  const s4 = dataFromApp.length > 0 && parseInt(dataFromApp[0].S4); 
-  const s5 = dataFromApp.length > 0 && parseInt(dataFromApp[0].S5); 
-  const s6 = dataFromApp.length > 0 && parseInt(dataFromApp[0].S6);
-  const s7 = dataFromApp.length > 0 && parseInt(dataFromApp[0].S7);
-  const s8 = dataFromApp.length > 0 && parseInt(dataFromApp[0].S8);
-  const s9 = dataFromApp.length > 0 && parseInt(dataFromApp[0].S9);
-  const s10 = dataFromApp.length > 0 && parseInt(dataFromApp[0].S10);
-  const s11 = dataFromApp.length > 0 && parseInt(dataFromApp[0].S11);
-  const s12 = dataFromApp.length > 0 && parseInt(dataFromApp[0].S12); 
+  const s1 = dataFromApp.length> 0 ? parseInt(dataFromApp[0].S1) : 0; 
+  const s2 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S2) : 0; 
+  const s3 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S3) : 0; 
+  const s4 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S4) : 0; 
+  const s5 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S5) : 0; 
+  const s6 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S6) : 0;
+  const s7 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S7) : 0;
+  const s8 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S8) : 0;
+  const s9 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S9) : 0;
+  const s10 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S10) : 0;
+  const s11 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S11) : 0;
+  const s12 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S12) : 0; 
 
   // gauge chart
   const gaugeData1 = [
@@ -206,12 +215,14 @@ const Dashboard = ({dataFromApp}) => {
           const maxValue = Math.max(...context.chart.data.datasets[0].data);
           return parseInt(value) === maxValue
             ? "rgba(255, 0, 0, 0.7)"
-            : "rgba(140, 72, 109, 0.3)";
+            : "rgba(75, 192, 192, 0.4)";
         },
         borderColor: (context) => {
           const value = context.raw;
           const maxValue = Math.max(...context.chart.data.datasets[0].data);
-          return parseInt(value) === maxValue ? "darkred" : "rgba(140, 72, 109)";
+          return parseInt(value) === maxValue
+            ? "darkred"
+            : "rgb(75, 192, 192)";
         },
         borderWidth: 1,
         barPercentage: 1,
@@ -267,14 +278,6 @@ const Dashboard = ({dataFromApp}) => {
   };
 
   // line chart data
-
-  const data = [
-    { x: 1, y: 10 },
-    { x: 2, y: 15 },
-    { x: 3, y: 25 },
-    { x: 4, y: 30 },
-  ];
-
   useEffect(() => {
     if(dataFromApp.length > 0) {
       const reversedData = [...dataFromApp].reverse();
@@ -313,6 +316,7 @@ const Dashboard = ({dataFromApp}) => {
             borderColor: "rgba(0, 0, 204, 1)",
             backgroundColor: "rgba(0, 0, 204, 0.2)",
             tension: 0.4,
+            hidden: true,
           },
           {
             label: "s3",
@@ -320,6 +324,7 @@ const Dashboard = ({dataFromApp}) => {
             borderColor: "rgba(0, 204, 0, 1)",
             backgroundColor: "rgba(0, 204, 0, 0.2)",
             tension: 0.4,
+            hidden: true,
           },
           {
             label: "s4",
@@ -327,6 +332,7 @@ const Dashboard = ({dataFromApp}) => {
             borderColor: "rgba(204, 204, 0, 1)",
             backgroundColor: "rgba(204, 204, 0, 0.2)",
             tension: 0.4,
+            hidden: true,
           },
           {
             label: "s5",
@@ -334,6 +340,7 @@ const Dashboard = ({dataFromApp}) => {
             borderColor: "rgba(204, 132, 0, 1)",
             backgroundColor: "rgba(204, 132, 0, 0.2)",
             tension: 0.4,
+            hidden: true,
           },
           {
             label: "s6",
@@ -341,6 +348,7 @@ const Dashboard = ({dataFromApp}) => {
             borderColor: "rgba(102, 0, 102, 1)",
             backgroundColor: "rgba(102, 0, 102, 0.2)",
             tension: 0.4,
+            hidden: true,
           },
           {
             label: "s7",
@@ -348,6 +356,7 @@ const Dashboard = ({dataFromApp}) => {
             borderColor: "rgba(0, 204, 204, 1)",
             backgroundColor: "rgba(0, 204, 204, 0.2)",
             tension: 0.4,
+            hidden: true,
           },
           {
             label: "s8",
@@ -355,6 +364,7 @@ const Dashboard = ({dataFromApp}) => {
             borderColor: "rgba(204, 0, 204, 1)",
             backgroundColor: "rgba(204, 0, 204, 0.2)",
             tension: 0.4,
+            hidden: true,
           },
           {
             label: "s9",
@@ -362,6 +372,7 @@ const Dashboard = ({dataFromApp}) => {
             borderColor: "rgba(204, 153, 162, 1)",
             backgroundColor: "rgba(204, 153, 162, 0.2)",
             tension: 0.4,
+            hidden: true,
           },
           {
             label: "s10",
@@ -369,6 +380,7 @@ const Dashboard = ({dataFromApp}) => {
             borderColor: "rgba(132, 34, 34, 1)",
             backgroundColor: "rgba(132, 34, 34, 0.2)",
             tension: 0.4,
+            hidden: true,
           },
           {
             label: "s11",
@@ -376,6 +388,7 @@ const Dashboard = ({dataFromApp}) => {
             borderColor: "rgba(0, 102, 102, 1)",
             backgroundColor: "rgba(0, 102, 102, 0.2)",
             tension: 0.4,
+            hidden: true,
           },
           {
             label: "s12",
@@ -383,12 +396,32 @@ const Dashboard = ({dataFromApp}) => {
             borderColor: "rgba(0, 204, 0, 1)",
             backgroundColor: "rgba(0, 204, 0, 0.2)",
             tension: 0.4,
+            hidden: true,
           },
         ],
       });
 
+      // activity status
+      const currentDate = new Date();
+      const lastDataEntry = dataFromApp[0];
+      if (lastDataEntry && lastDataEntry.createdAt) {
+        const lastDataTime = new Date(lastDataEntry.createdAt);
+
+        const timeDifference = currentDate.getTime() - lastDataTime.getTime();
+        const differenceInMinutes = timeDifference / (1000 * 60);
+
+        if (differenceInMinutes < 5) {
+          setActivityStatus("Active");
+        } else {
+          setActivityStatus("Inactive");
+        }
+      } else {
+        console.error("createdAt field is missing in the data");
+      }
     }
-  })
+  },[dataFromApp]);
+
+  // console.log('activity status', activityStatus);
   
   const lineOptions = {
     responsive: true,
@@ -439,6 +472,21 @@ const Dashboard = ({dataFromApp}) => {
     },
   };
 
+  // individual datepicker sensor api
+  const handleDatepickerSensorPlot  = async(e) => {
+    e.preventDefault();
+    try{
+      const response = await axios.post('http://localhost:4000/backend/getHindalcoDatewiseData', {selectedGauge, datepickerSensorFromDate, datepickerSensorToDate});
+      if(response.data.success) {
+        console.log(response.data.data);
+      } else {
+        console.log('problem finding datewise data');
+      }
+    } catch(error) {
+      console.error(' Error fetching datewise data', error);
+    };
+  };
+
   return (
     <div className="xl:h-screen p-4 text-white 2xl:text-2xl flex flex-col gap-2">
       <div className="xl:h-[14%] flex flex-col justify-center gap-2">
@@ -479,17 +527,39 @@ const Dashboard = ({dataFromApp}) => {
         <div className="flex flex-col-reverse md:flex-row justify-between gap-2">
           {/* activity status */}
           <div className="flex gap-4 items-center">
-            <div className="rounded-full w-8 h-8 2xl:w-12 2xl:h-12 flex justify-center items-center border border-white">
-              A
-            </div>
+            {activityStatus === "Active" ? (
+              <div
+                className="rounded-full w-9 h-9 2xl:w-12 2xl:h-12 flex justify-center items-center bg-gradient-to-tr from-green-700 via-green-500 to-green-300"
+                data-tooltip-id="activity-status"
+                data-tooltip-content="Data is being recieved!"
+              >
+                <BsDatabaseFillCheck className="text-2xl" />
+              </div>
+            ) : (
+              <div
+                className="rounded-full w-9 h-9 2xl:w-12 2xl:h-12 flex justify-center items-center activity-status-indicator"
+                data-tooltip-id="activity-status"
+                data-tooltip-content="No data has been received for the past 5 minutes"
+              >
+                <MdSystemSecurityUpdateWarning className="text-2xl" />
+              </div>
+            )}
+            <ReactTooltip
+              id="activity-status"
+              style={{
+                backgroundColor: "white",
+                color: "#4B5563",
+                fontSize: "0.75rem",
+              }}
+            />
             <div className="text-sm font-medium">
               Click to see individual sensor data
             </div>
           </div>
           <div className="flex items-center justify-between gap-2 text-xs md:text-sm">
             {/* last update */}
-            <div className="px-2 py-1 border border-white rounded-xl flex gap-1">
-              <div className="font-medium">Last update:</div>
+            <div className="px-2 py-1 border border-white rounded-xl flex items-center text-center gap-1">
+              <div className="font-medium">Last&nbsp;update:</div>
               <div>
                 {dataFromApp.length > 0 &&
                   new Date(dataFromApp[0].createdAt).toLocaleString("en-GB")}
@@ -497,13 +567,12 @@ const Dashboard = ({dataFromApp}) => {
             </div>
             {/* report */}
             <div
-              className="px-2 py-1 rounded-lg text-white font-medium flex gap-1 border border-white"
+              className="px-2 py-1 rounded-lg text-gray-600 font-medium flex gap-1 text-center items-center"
               style={{
                 backgroundImage:
-                  "linear-gradient(to right, #5c2f47, #6a3e5c, #784e71, #845f88, #8f719f)",
+                  "linear-gradient(to right, #4bc0c0, #49cccc, #45d9d9, #40e5e5, #3af2f2)",
               }}
             >
-              {/* background-image: linear-gradient(to right, #5c2f47, #6a3e5c, #784e71, #845f88, #8f719f); */}
               Report generation <TbDownload className="text-xl " />
             </div>
           </div>
@@ -520,7 +589,10 @@ const Dashboard = ({dataFromApp}) => {
                 <div className="w-1/2 flex">
                   <div
                     className="w-1/2 flex items-center justify-center"
-                    onClick={() => setGaugeClicked(true)}
+                    onClick={() => {
+                      setGaugeClicked(true);
+                      setSelectedGauge("Sensor 1");
+                    }}
                   >
                     <Chart
                       chartType="Gauge"
@@ -531,7 +603,10 @@ const Dashboard = ({dataFromApp}) => {
                   </div>
                   <div
                     className="w-1/2 flex justify-center items-center"
-                    onClick={() => setGaugeClicked(true)}
+                    onClick={() => {
+                      setGaugeClicked(true);
+                      setSelectedGauge("Sensor 2");
+                    }}
                   >
                     <Chart
                       chartType="Gauge"
@@ -545,7 +620,10 @@ const Dashboard = ({dataFromApp}) => {
                 <div className="w-1/2 flex">
                   <div
                     className="w-1/2 flex justify-center items-center"
-                    onClick={() => setGaugeClicked(true)}
+                    onClick={() => {
+                      setGaugeClicked(true);
+                      setSelectedGauge("Sensor 3");
+                    }}
                   >
                     <Chart
                       chartType="Gauge"
@@ -556,7 +634,10 @@ const Dashboard = ({dataFromApp}) => {
                   </div>
                   <div
                     className="w-1/2 flex justify-center items-center"
-                    onClick={() => setGaugeClicked(true)}
+                    onClick={() => {
+                      setGaugeClicked(true);
+                      setSelectedGauge("Sensor 4");
+                    }}
                   >
                     <Chart
                       chartType="Gauge"
@@ -573,7 +654,10 @@ const Dashboard = ({dataFromApp}) => {
                 <div className="w-1/2 flex">
                   <div
                     className="w-1/2 flex justify-center items-center"
-                    onClick={() => setGaugeClicked(true)}
+                    onClick={() => {
+                      setGaugeClicked(true);
+                      setSelectedGauge("Sensor 5");
+                    }}
                   >
                     <Chart
                       chartType="Gauge"
@@ -584,7 +668,10 @@ const Dashboard = ({dataFromApp}) => {
                   </div>
                   <div
                     className="w-1/2 flex justify-center items-center"
-                    onClick={() => setGaugeClicked(true)}
+                    onClick={() => {
+                      setGaugeClicked(true);
+                      setSelectedGauge("Sensor 6");
+                    }}
                   >
                     <Chart
                       chartType="Gauge"
@@ -597,7 +684,10 @@ const Dashboard = ({dataFromApp}) => {
                 <div className="w-1/2 flex">
                   <div
                     className="w-1/2 flex justify-center items-center"
-                    onClick={() => setGaugeClicked(true)}
+                    onClick={() => {
+                      setGaugeClicked(true);
+                      setSelectedGauge("Sensor 7");
+                    }}
                   >
                     <Chart
                       chartType="Gauge"
@@ -608,7 +698,10 @@ const Dashboard = ({dataFromApp}) => {
                   </div>
                   <div
                     className="w-1/2 flex justify-center items-center"
-                    onClick={() => setGaugeClicked(true)}
+                    onClick={() => {
+                      setGaugeClicked(true);
+                      setSelectedGauge("Sensor 8");
+                    }}
                   >
                     <Chart
                       chartType="Gauge"
@@ -625,7 +718,10 @@ const Dashboard = ({dataFromApp}) => {
                 <div className="w-1/2 flex">
                   <div
                     className="w-1/2 flex justify-center items-center"
-                    onClick={() => setGaugeClicked(true)}
+                    onClick={() => {
+                      setGaugeClicked(true);
+                      setSelectedGauge("Sensor 9");
+                    }}
                   >
                     <Chart
                       chartType="Gauge"
@@ -636,7 +732,10 @@ const Dashboard = ({dataFromApp}) => {
                   </div>
                   <div
                     className="w-1/2 flex justify-center items-center"
-                    onClick={() => setGaugeClicked(true)}
+                    onClick={() => {
+                      setGaugeClicked(true);
+                      setSelectedGauge("Sensor 10");
+                    }}
                   >
                     <Chart
                       chartType="Gauge"
@@ -649,7 +748,10 @@ const Dashboard = ({dataFromApp}) => {
                 <div className="w-1/2 flex">
                   <div
                     className="w-1/2 flex justify-center items-center"
-                    onClick={() => setGaugeClicked(true)}
+                    onClick={() => {
+                      setGaugeClicked(true);
+                      setSelectedGauge("Sensor 11");
+                    }}
                   >
                     <Chart
                       chartType="Gauge"
@@ -660,7 +762,10 @@ const Dashboard = ({dataFromApp}) => {
                   </div>
                   <div
                     className="w-1/2 flex justify-center items-center"
-                    onClick={() => setGaugeClicked(true)}
+                    onClick={() => {
+                      setGaugeClicked(true);
+                      setSelectedGauge("Sensor 12");
+                    }}
                   >
                     <Chart
                       chartType="Gauge"
@@ -704,15 +809,15 @@ const Dashboard = ({dataFromApp}) => {
               backgroundImage:
                 "linear-gradient(to right top, #96adcf, #9eb3d2, #a7b8d5, #afbed8, #b7c4db, #bdcadf, #c2cfe3, #c8d5e7, #ccdced, #d1e4f3, #d6ebf9, #dbf2ff)",
               scrollbarWidth: "thin",
-              scrollbarColor: "#8c486d transparent",
+              scrollbarColor: "#4bc0c0 transparent",
             }}
           >
             <table className="w-full">
               <thead
-                className="sticky top-0 text-white"
+                className="sticky top-0 text-gray-600"
                 style={{
                   backgroundImage:
-                    "linear-gradient(to right, #5c2f47, #6a3e5c, #784e71, #845f88, #8f719f)",
+                    "linear-gradient(to right, #4bc0c0, #49cccc, #45d9d9, #40e5e5, #3af2f2)",
                 }}
               >
                 <tr>
@@ -792,9 +897,9 @@ const Dashboard = ({dataFromApp}) => {
               >
                 <button className="expand-button px-4 flex gap-2">
                   {lineGraphExpanded ? (
-                    <LuShrink className="icon text-white text-lg" />
+                    <LuShrink className="icon text-gray-600 text-lg" />
                   ) : (
-                    <LuExpand className="icon text-white text-base" />
+                    <LuExpand className="icon text-gray-600 text-base" />
                   )}
                   <span className="expand-text">
                     {lineGraphExpanded ? "Shrink" : "Expand"}
@@ -865,7 +970,7 @@ const Dashboard = ({dataFromApp}) => {
               <div className="w-[8%] flex justify-center items-center">
                 <ReactSlider
                   className="w-10 h-[94%] flex justify-center items-center "
-                  thumbClassName="w-6 h-6 bg-[#6e3855] rounded-full flex items-center justify-center cursor-pointer text-white font-bold text-[10px] hover:scale-110 border border-white duration-200 focus:outline-none"
+                  thumbClassName="w-6 h-6 bg-[#4bc0c0] rounded-full flex items-center justify-center cursor-pointer text-gray-600 font-bold text-[10px] hover:scale-110 border border-gray-600 duration-200 focus:outline-none"
                   trackClassName="w-0.5 rounded-full bg-red-600"
                   min={0}
                   max={1000}
@@ -886,27 +991,49 @@ const Dashboard = ({dataFromApp}) => {
                 />
               </div>
               <div className="w-[92%] ">
-                {/* <Line data={lineData} options={lineOptions} width={"100%"} /> */}
-                <LineChartCanvas data={data} />
+                <Line data={lineData} options={lineOptions} width={"100%"} />
+                {/* <LineChartCanvas data={dataFromApp} /> */}
               </div>
             </div>
           </div>
         </div>
         {gaugeClicked && (
           <div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[95%] w-[95%] rounded-xl text-gray-600 py-1 px-1.5 z-10"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[95%] w-[95%] rounded-xl text-gray-700 p-2 z-10 "
             style={{
               backgroundImage:
                 "linear-gradient(to right top, #96adcf, #9eb3d2, #a7b8d5, #afbed8, #b7c4db, #bdcadf, #c2cfe3, #c8d5e7, #ccdced, #d1e4f3, #d6ebf9, #dbf2ff)",
             }}
           >
-            <button
-              className="border border-black"
-              onClick={() => setGaugeClicked(false)}
-            >
-              close
-            </button>
-            individual sensor content
+            <div className="flex justify-between">
+              <form className="flex gap-4" onSubmit={handleDatepickerSensorPlot}>
+                <div>Select date range</div>
+                <label>From:</label>
+                <input
+                  type="date"
+                  className="rounded-md px-0.5 2xl:p-2"
+                  required
+                  value={datepickerSensorFromDate}
+                  onChange={(e) => setDatepickerSensorFromDate(e.target.value)}
+                />
+                <label>From:</label>
+                <input
+                  type="date"
+                  className="rounded-md px-0.5 2xl:p-2"
+                  required
+                  value={datepickerSensorToDate}
+                  onChange={(e) => setDatepickerSensorToDate(e.target.value)}
+                />
+                <button className='border border-black' type='submit'>plot</button>
+              </form>
+              <div className="border border-black ">{selectedGauge} data</div>
+              <button
+                className="border border-black"
+                onClick={() => setGaugeClicked(false)}
+              >
+                🗙
+              </button>
+            </div>
           </div>
         )}
       </div>
