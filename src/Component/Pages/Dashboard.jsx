@@ -43,15 +43,14 @@ ChartJS.register(
 );
 
 const Dashboard = ({dataFromApp}) => {
-
   // console.log('data from app', dataFromApp);
 
   const getGaugeHeight = () => {
-    if(window.innerWidth < 768) {
+    if (window.innerWidth < 768) {
       return 75;
-    } else if(window.innerWidth >= 768 && window.innerWidth < 1536) {
+    } else if (window.innerWidth >= 768 && window.innerWidth < 1536) {
       return 100;
-    } else if(window.innerWidth >= 1536) {
+    } else if (window.innerWidth >= 1536) {
       return 150;
     }
   };
@@ -60,19 +59,25 @@ const Dashboard = ({dataFromApp}) => {
   const [lineSliderValues, setLineSliderValues] = useState([0, 450]);
   const [lineGraphExpanded, setLineGraphExpanded] = useState(false);
   const [gaugeClicked, setGaugeClicked] = useState(false);
-  const [activityStatus, setActivityStatus] = useState('');
-  const [selectedGauge, setSelectedGauge] = useState('');
-  const [datepickerSensorFromDate, setDatepickerSensorFromDate] = useState('');
-  const [datepickerSensorToDate, setDatepickerSensorToDate] = useState('');
+  const [activityStatus, setActivityStatus] = useState("");
+  const [selectedGauge, setSelectedGauge] = useState("");
+  const [datepickerSensorFromDate, setDatepickerSensorFromDate] = useState("");
+  const [datepickerSensorToDate, setDatepickerSensorToDate] = useState("");
+  const [datepickerLineData, setDatepickerLineData] = useState([]);
 
   const [lineData, setLineData] = useState({
     labels: [],
     datasets: [],
   });
 
+  const [datewiseLineData, setDateWiseLineData] = useState({
+    labels: [],
+    datasets: [],
+  });
+
   // line chart limit
   const getInitialLimit = () => {
-    const storedLimit = localStorage.getItem('HindalcoLimit');
+    const storedLimit = localStorage.getItem("HindalcoLimit");
     return storedLimit ? parseInt(storedLimit) : 100;
   };
 
@@ -81,7 +86,7 @@ const Dashboard = ({dataFromApp}) => {
   const handleLineLimit = (e) => {
     const limit = parseInt(e.target.value);
     setHindalcoLimit(limit);
-    localStorage.setItem('HindalcoLimit', limit.toString());
+    localStorage.setItem("HindalcoLimit", limit.toString());
   };
 
   // responsive gauge chart
@@ -94,23 +99,23 @@ const Dashboard = ({dataFromApp}) => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const s1 = dataFromApp.length> 0 ? parseInt(dataFromApp[0].S1) : 0; 
-  const s2 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S2) : 0; 
-  const s3 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S3) : 0; 
-  const s4 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S4) : 0; 
-  const s5 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S5) : 0; 
+  const s1 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S1) : 0;
+  const s2 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S2) : 0;
+  const s3 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S3) : 0;
+  const s4 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S4) : 0;
+  const s5 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S5) : 0;
   const s6 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S6) : 0;
   const s7 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S7) : 0;
   const s8 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S8) : 0;
   const s9 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S9) : 0;
   const s10 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S10) : 0;
   const s11 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S11) : 0;
-  const s12 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S12) : 0; 
+  const s12 = dataFromApp.length > 0 ? parseInt(dataFromApp[0].S12) : 0;
 
   // gauge chart
   const gaugeData1 = [
     ["Label", "Value"],
-    ["S1", s1]
+    ["S1", s1],
   ];
 
   const gaugeData2 = [
@@ -174,7 +179,7 @@ const Dashboard = ({dataFromApp}) => {
     redTo: 250,
     minorTicks: 5,
     min: 0,
-    max: 250
+    max: 250,
   };
 
   // bar chart
@@ -220,9 +225,7 @@ const Dashboard = ({dataFromApp}) => {
         borderColor: (context) => {
           const value = context.raw;
           const maxValue = Math.max(...context.chart.data.datasets[0].data);
-          return parseInt(value) === maxValue
-            ? "darkred"
-            : "rgb(75, 192, 192)";
+          return parseInt(value) === maxValue ? "darkred" : "rgb(75, 192, 192)";
         },
         borderWidth: 1,
         barPercentage: 1,
@@ -279,7 +282,7 @@ const Dashboard = ({dataFromApp}) => {
 
   // line chart data
   useEffect(() => {
-    if(dataFromApp.length > 0) {
+    if (dataFromApp.length > 0) {
       const reversedData = [...dataFromApp].reverse();
 
       const lineLabels = reversedData.map((item) => {
@@ -419,10 +422,37 @@ const Dashboard = ({dataFromApp}) => {
         console.error("createdAt field is missing in the data");
       }
     }
-  },[dataFromApp]);
+  }, [dataFromApp]);
+
+  // datewise line chart data
+  useEffect(() => {
+    if (datepickerLineData.length > 0) {
+      const lineLabels = datepickerLineData.map((item) => {
+        const createdAt = new Date(item.createdAt).toLocaleString("en-GB");
+        return createdAt;
+      });
+
+      const data = datepickerLineData.map((item) => item[selectedGauge]);
+      // console.log('selected gauge', selectedGauge)
+      // console.log(data);
+
+      setDateWiseLineData({
+        labels: lineLabels,
+        datasets: [
+          {
+            label: selectedGauge,
+            data: data,
+            borderColor: "rgba(204, 0, 0, 1)",
+            backgroundColor: "rgba(204, 0, 0, 0.2)",
+            tension: 0.4,
+          },
+        ],
+      });
+    }
+  }, [datepickerLineData]);
 
   // console.log('activity status', activityStatus);
-  
+
   const lineOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -473,19 +503,24 @@ const Dashboard = ({dataFromApp}) => {
   };
 
   // individual datepicker sensor api
-  const handleDatepickerSensorPlot  = async(e) => {
+  const handleDatepickerSensorPlot = async (e) => {
     e.preventDefault();
-    try{
-      const response = await axios.post('http://localhost:4000/backend/getHindalcoDatewiseData', {selectedGauge, datepickerSensorFromDate, datepickerSensorToDate});
-      if(response.data.success) {
-        console.log(response.data.data);
+    try {
+      const response = await axios.post(
+        "http://localhost:4000/backend/getHindalcoDatewiseData",
+        { selectedGauge, datepickerSensorFromDate, datepickerSensorToDate }
+      );
+      if (response.data.success) {
+        setDatepickerLineData(response.data.data);
       } else {
-        console.log('problem finding datewise data');
+        console.log("problem finding datewise data");
       }
-    } catch(error) {
-      console.error(' Error fetching datewise data', error);
-    };
+    } catch (error) {
+      console.error(" Error fetching datewise data", error);
+    }
   };
+
+  // console.log("datepickerLineData", datepickerLineData);
 
   return (
     <div className="xl:h-screen p-4 text-white 2xl:text-2xl flex flex-col gap-2">
@@ -539,7 +574,7 @@ const Dashboard = ({dataFromApp}) => {
               <div
                 className="rounded-full w-9 h-9 2xl:w-12 2xl:h-12 flex justify-center items-center activity-status-indicator"
                 data-tooltip-id="activity-status"
-                data-tooltip-content="No data has been received for the past 5 minutes"
+                data-tooltip-content="No data is being recieved for more than 5 minutes"
               >
                 <MdSystemSecurityUpdateWarning className="text-2xl" />
               </div>
@@ -591,7 +626,7 @@ const Dashboard = ({dataFromApp}) => {
                     className="w-1/2 flex items-center justify-center"
                     onClick={() => {
                       setGaugeClicked(true);
-                      setSelectedGauge("Sensor 1");
+                      setSelectedGauge("S1");
                     }}
                   >
                     <Chart
@@ -605,7 +640,7 @@ const Dashboard = ({dataFromApp}) => {
                     className="w-1/2 flex justify-center items-center"
                     onClick={() => {
                       setGaugeClicked(true);
-                      setSelectedGauge("Sensor 2");
+                      setSelectedGauge("S2");
                     }}
                   >
                     <Chart
@@ -622,7 +657,7 @@ const Dashboard = ({dataFromApp}) => {
                     className="w-1/2 flex justify-center items-center"
                     onClick={() => {
                       setGaugeClicked(true);
-                      setSelectedGauge("Sensor 3");
+                      setSelectedGauge("S3");
                     }}
                   >
                     <Chart
@@ -636,7 +671,7 @@ const Dashboard = ({dataFromApp}) => {
                     className="w-1/2 flex justify-center items-center"
                     onClick={() => {
                       setGaugeClicked(true);
-                      setSelectedGauge("Sensor 4");
+                      setSelectedGauge("S4");
                     }}
                   >
                     <Chart
@@ -656,7 +691,7 @@ const Dashboard = ({dataFromApp}) => {
                     className="w-1/2 flex justify-center items-center"
                     onClick={() => {
                       setGaugeClicked(true);
-                      setSelectedGauge("Sensor 5");
+                      setSelectedGauge("S5");
                     }}
                   >
                     <Chart
@@ -670,7 +705,7 @@ const Dashboard = ({dataFromApp}) => {
                     className="w-1/2 flex justify-center items-center"
                     onClick={() => {
                       setGaugeClicked(true);
-                      setSelectedGauge("Sensor 6");
+                      setSelectedGauge("S6");
                     }}
                   >
                     <Chart
@@ -686,7 +721,7 @@ const Dashboard = ({dataFromApp}) => {
                     className="w-1/2 flex justify-center items-center"
                     onClick={() => {
                       setGaugeClicked(true);
-                      setSelectedGauge("Sensor 7");
+                      setSelectedGauge("S7");
                     }}
                   >
                     <Chart
@@ -700,7 +735,7 @@ const Dashboard = ({dataFromApp}) => {
                     className="w-1/2 flex justify-center items-center"
                     onClick={() => {
                       setGaugeClicked(true);
-                      setSelectedGauge("Sensor 8");
+                      setSelectedGauge("S8");
                     }}
                   >
                     <Chart
@@ -720,7 +755,7 @@ const Dashboard = ({dataFromApp}) => {
                     className="w-1/2 flex justify-center items-center"
                     onClick={() => {
                       setGaugeClicked(true);
-                      setSelectedGauge("Sensor 9");
+                      setSelectedGauge("S9");
                     }}
                   >
                     <Chart
@@ -734,7 +769,7 @@ const Dashboard = ({dataFromApp}) => {
                     className="w-1/2 flex justify-center items-center"
                     onClick={() => {
                       setGaugeClicked(true);
-                      setSelectedGauge("Sensor 10");
+                      setSelectedGauge("S10");
                     }}
                   >
                     <Chart
@@ -750,7 +785,7 @@ const Dashboard = ({dataFromApp}) => {
                     className="w-1/2 flex justify-center items-center"
                     onClick={() => {
                       setGaugeClicked(true);
-                      setSelectedGauge("Sensor 11");
+                      setSelectedGauge("S11");
                     }}
                   >
                     <Chart
@@ -764,7 +799,7 @@ const Dashboard = ({dataFromApp}) => {
                     className="w-1/2 flex justify-center items-center"
                     onClick={() => {
                       setGaugeClicked(true);
-                      setSelectedGauge("Sensor 12");
+                      setSelectedGauge("S12");
                     }}
                   >
                     <Chart
@@ -999,14 +1034,17 @@ const Dashboard = ({dataFromApp}) => {
         </div>
         {gaugeClicked && (
           <div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[95%] w-[95%] rounded-xl text-gray-700 p-2 z-10 "
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[95%] w-[95%] rounded-xl text-gray-700 p-2 z-10 flex flex-col"
             style={{
               backgroundImage:
                 "linear-gradient(to right top, #96adcf, #9eb3d2, #a7b8d5, #afbed8, #b7c4db, #bdcadf, #c2cfe3, #c8d5e7, #ccdced, #d1e4f3, #d6ebf9, #dbf2ff)",
             }}
           >
             <div className="flex justify-between">
-              <form className="flex gap-4" onSubmit={handleDatepickerSensorPlot}>
+              <form
+                className="flex gap-4"
+                onSubmit={handleDatepickerSensorPlot}
+              >
                 <div>Select date range</div>
                 <label>From:</label>
                 <input
@@ -1024,15 +1062,26 @@ const Dashboard = ({dataFromApp}) => {
                   value={datepickerSensorToDate}
                   onChange={(e) => setDatepickerSensorToDate(e.target.value)}
                 />
-                <button className='border border-black' type='submit'>plot</button>
+                <button className="border border-black" type="submit">
+                  plot
+                </button>
               </form>
               <div className="border border-black ">{selectedGauge} data</div>
               <button
                 className="border border-black"
-                onClick={() => setGaugeClicked(false)}
+                onClick={() => {
+                  setGaugeClicked(false);
+                  setSelectedGauge('');
+                  setDatepickerSensorFromDate('');
+                  setDatepickerSensorToDate('');
+                  setDatepickerLineData([]);
+                }}
               >
                 🗙
               </button>
+            </div>
+            <div className='flex-1'>
+              <Line data={datewiseLineData} options={lineOptions} width={'100%'} />
             </div>
           </div>
         )}
