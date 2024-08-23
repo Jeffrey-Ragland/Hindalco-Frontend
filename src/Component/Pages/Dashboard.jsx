@@ -1,7 +1,12 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
 import {Link} from 'react-router-dom';
-import xymaLogo from '../Assets/xymaLogoWhite.png';
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+import xymaLogo from '../Assets/xymaLogoBlue.png';
+import xymaLogoWhite from '../Assets/xymaLogoWhite.png';
 import hindalcoLogo from '../Assets/hindalcoLogo.png';
 import coverImg from "../Assets/pdfcover.jpg";
 import sensorPage from "../Assets/utmapsPage.jpg";
@@ -69,6 +74,23 @@ const Dashboard = ({dataFromApp}) => {
     }
   };
 
+  const getDynamicLineChartLabel = () => {
+    if(window.innerWidth < 1536) {
+      return 8;
+    } else if(window.innerWidth >= 1536) {
+      return 15;
+    }
+  };
+
+  const getDynamicLineChartX = () => {
+    if (window.innerWidth < 1536) {
+      return 5;
+    } else if (window.innerWidth >= 1536) {
+      return 7;
+    }
+  };
+  
+
   const [gaugeHeight, setGaugeHeight] = useState(getGaugeHeight());
   const [lineSliderValues, setLineSliderValues] = useState([0, 450]);
   const [lineGraphExpanded, setLineGraphExpanded] = useState(false);
@@ -88,7 +110,7 @@ const Dashboard = ({dataFromApp}) => {
   const [enableCount, setEnableCount] = useState(false);
   const [parameters, setParameters] = useState({}); // for sensor-wise data
   const [selectedSensors, setSelectedSensors] = useState([]); //for sensor wise data
-  // const [unselectedSensors, setUnselectedSensors] = useState([]);
+  const [unselectedSensors, setUnselectedSensors] = useState([]);
   const [selectedSensorWiseReportOption, setSelectedSensorWiseReportOption] =
     useState("datePicker"); // for sensor wise data
   const [sensorWiseCount, setSensorWiseCount] = useState(100); // for sensor-wise data
@@ -97,7 +119,7 @@ const Dashboard = ({dataFromApp}) => {
   const [toDate, setToDate] = useState("");
   const [sensorWiseFromDate, setSensorWiseFromDate] = useState("");
   const [sensorWiseToDate, setSensorWiseToDate] = useState("");
-  const [reportData, setReportData] = useState("");
+  const [reportData, setReportData] = useState([]);
 
   // used for displaying the sensor names in sensor wise data option
   useEffect(() => {
@@ -106,6 +128,22 @@ const Dashboard = ({dataFromApp}) => {
       setParameters(filteredData);
     }
   }, [dataFromApp]);
+
+  // used for setting unselected sensor
+  useEffect(() => {
+    if (
+      parameters &&
+      selectedSensors &&
+      selectedReportOption === "sensorWiseData"
+    ) {
+      const allSensors = Object.keys(parameters);
+      const unselected = allSensors.filter(
+        (sensor) => !selectedSensors.includes(sensor)
+      );
+
+      setUnselectedSensors(unselected);
+    }
+  }, [parameters, selectedSensors]);
 
   const handleSensorWiseDataSensorSelection = (key) => {
     setSelectedSensors((prevSelectedSensors) => {
@@ -124,6 +162,7 @@ const Dashboard = ({dataFromApp}) => {
     fromDate,
     toDate,
     count,
+    unselectedSensors,
     sensorWiseFromDate,
     sensorWiseToDate,
     sensorWiseCount,
@@ -132,12 +171,13 @@ const Dashboard = ({dataFromApp}) => {
   const handleReportData = async () => {
     try {
       const response = await axios.get(
-        "http://localhost:4000/sensor/getAutoDashReportData",
+        "http://localhost:4000/backend/getHindalcoReportData",
         {
           params: {
             fromDate: fromDate,
             toDate: toDate,
             count: count,
+            unselectedSensors: unselectedSensors.join(","),
             sensorWiseFromDate: sensorWiseFromDate,
             sensorWiseToDate: sensorWiseToDate,
             sensorWiseCount: sensorWiseCount,
@@ -152,12 +192,82 @@ const Dashboard = ({dataFromApp}) => {
   };
 
   const generatePdf = () => {
+    const doc = new jsPDF();
+    const logo = xymaLogo;
+    const cover = coverImg;
+    const desc = sensorPage;
+    const disclaimer = disclaimerPage;
 
+    // cover img
+    doc.addImage(cover, "JPG", 0, 0, 210, 297);
+    doc.addPage();
+
+    //logo
+    doc.addImage(logo, "PNG", 10, 10, 40, 20);
+
+    //sensor description
+    doc.addImage(desc, "PNG", 0, 40, 220, 250);
+    doc.addPage();
+
+    //logo
+    doc.addImage(logo, "PNG", 10, 10, 40, 20);
+
+    // table
+    if (reportData.length > 0) {
+      // pdf headers
+      const headers = ["S.No", ...Object.keys(reportData[0])];
+
+      // pdf table data
+      const body = reportData.map((item, index) => {
+        const rows = [
+          index + 1,
+          ...Object.keys(item)
+            .filter((key) => key !== "createdAt")
+            .map((key) => item[key]),
+          new Date(item.createdAt).toLocaleString("en-GB"),
+        ];
+        return rows;
+      });
+
+      doc.autoTable({
+        head: [headers],
+        body: body,
+        startY: 40,
+        headStyles: {
+          fillColor: [222, 121, 13],
+        },
+      });
+    }
+
+    doc.addPage();
+
+    //logo
+    doc.addImage(logo, "PNG", 10, 10, 40, 20);
+
+    //disclaimer
+    doc.addImage(disclaimer, "PNG", 0, 50, 210, 250);
+
+    const blob = doc.output("blob");
+
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
   };
 
   const generateExcel = () => {
-
-  }
+    const ws = XLSX.utils.json_to_sheet(
+      reportData.map(({ createdAt, ...rest }) => ({
+        ...rest,
+        createdAt: new Date(createdAt).toLocaleString("en-GB"),
+      }))
+    );
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const info = new Blob([excelBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    saveAs(info, `Hindalco_Report.xlsx`);
+  };
 
   const [lineData, setLineData] = useState({
     labels: [],
@@ -591,7 +701,7 @@ const Dashboard = ({dataFromApp}) => {
           padding: 10,
           color: "#4B5563",
           font: {
-            size: 8,
+            size: getDynamicLineChartLabel(),
           },
         },
       },
@@ -611,7 +721,7 @@ const Dashboard = ({dataFromApp}) => {
         ticks: {
           color: "#4B5563",
           font: {
-            size: 5,
+            size: getDynamicLineChartX(),
           },
         },
       },
@@ -695,16 +805,16 @@ const Dashboard = ({dataFromApp}) => {
     }
   };
 
-  console.log("datepickerLineData", datepickerLineData);
+  // console.log("datepickerLineData", datepickerLineData);
 
   return (
-    <div className="xl:h-screen p-4 text-white 2xl:text-2xl flex flex-col gap-2">
-      <div className="xl:h-[14%] flex flex-col justify-center gap-2">
+    <div className="xl:h-screen p-4 text-white 2xl:text-2xl flex flex-col gap-2 2xl:gap-4">
+      <div className="xl:h-[14%] flex flex-col justify-center gap-2 2xl:gap-4">
         {/* top bar */}
         <div className="flex justify-between items-center">
           <div className="flex gap-2 md:gap-4">
             <img
-              src={xymaLogo}
+              src={xymaLogoWhite}
               alt="xymaLogo"
               className="h-8 md:h-12 2xl:h-14"
             />
@@ -724,7 +834,7 @@ const Dashboard = ({dataFromApp}) => {
                 onClick={() => localStorage.clear()}
               >
                 <div className="logout-logo ">
-                  <ImExit className="text-xl" />
+                  <ImExit className="text-xl 2xl:text-[22px]" />
                 </div>
 
                 <div className="logout-text text-lg">Logout</div>
@@ -734,7 +844,7 @@ const Dashboard = ({dataFromApp}) => {
         </div>
 
         {/* 2nd layer */}
-        <div className="flex flex-col-reverse md:flex-row justify-between gap-2">
+        <div className="flex flex-col-reverse md:flex-row justify-between gap-2 2xl:gap-4">
           {/* activity status */}
           <div className="flex gap-4 items-center">
             {activityStatus === "Active" ? (
@@ -743,7 +853,7 @@ const Dashboard = ({dataFromApp}) => {
                 data-tooltip-id="activity-status"
                 data-tooltip-content="Data is being recieved!"
               >
-                <BsDatabaseFillCheck className="text-2xl" />
+                <BsDatabaseFillCheck className="text-2xl 2xl:text-3xl" />
               </div>
             ) : (
               <div
@@ -751,7 +861,7 @@ const Dashboard = ({dataFromApp}) => {
                 data-tooltip-id="activity-status"
                 data-tooltip-content="No data is being recieved for more than 5 minutes"
               >
-                <MdSystemSecurityUpdateWarning className="text-2xl" />
+                <MdSystemSecurityUpdateWarning className="text-2xl 2xl:text-3xl" />
               </div>
             )}
             <ReactTooltip
@@ -762,12 +872,12 @@ const Dashboard = ({dataFromApp}) => {
                 fontSize: "0.75rem",
               }}
             />
-            <div className="text-sm font-medium flex gap-2 items-center">
+            <div className="text-sm 2xl:text-base font-medium flex gap-2 items-center">
               Click to analyze individual sensor data{" "}
-              <PiArrowElbowRightDownBold className="text-lg" />
+              <PiArrowElbowRightDownBold className="text-lg 2xl:text-2xl" />
             </div>
           </div>
-          <div className="flex items-center justify-between gap-2 text-xs md:text-sm">
+          <div className="flex items-center justify-between gap-2 2xl:gap-4 text-xs md:text-sm 2xl:text-base">
             {/* last update */}
             <div className="px-2 py-1 border border-white rounded-xl flex items-center text-center gap-1">
               <div className="font-medium">Last&nbsp;update:</div>
@@ -785,15 +895,16 @@ const Dashboard = ({dataFromApp}) => {
               }}
               onClick={() => setReportPopup(true)}
             >
-              Report generation <TbDownload className="text-xl " />
+              Report generation{" "}
+              <TbDownload className="text-xl 2xl:text-2xl text-red-500" />
             </div>
           </div>
         </div>
       </div>
 
-      <div className="relative xl:h-[86%] flex flex-col gap-4 xl:gap-2">
-        <div className="xl:h-[60%] gap-4 xl:gap-2 flex flex-col xl:flex-row">
-          <div className="w-full xl:w-[70%] flex flex-col md:flex-row gap-4 md:gap-2">
+      <div className="relative xl:h-[86%] flex flex-col gap-4 xl:gap-2 2xl:gap-4">
+        <div className="xl:h-[60%] gap-4 xl:gap-2 2xl:gap-4 flex flex-col xl:flex-row">
+          <div className="w-full xl:w-[70%] flex flex-col md:flex-row gap-4 md:gap-2 2xl:gap-4">
             {/* gauge */}
             <div className="w-full md:w-[55%] border border-l-white border-r-white border-t-transparent border-b-transparent rounded-3xl">
               {/* 1st row */}
@@ -1013,10 +1124,10 @@ const Dashboard = ({dataFromApp}) => {
           </div>
         </div>
 
-        <div className="xl:h-[40%] flex flex-col xl:flex-row gap-4 xl:gap-2">
+        <div className="xl:h-[40%] flex flex-col xl:flex-row gap-4 xl:gap-2 2xl:gap-4">
           {/* table */}
           <div
-            className="w-full xl:w-1/2 h-[300px] lg:h-[400px] xl:h-auto rounded-xl text-gray-600 overflow-auto text-center text-[10px] md:text-xs"
+            className="w-full xl:w-1/2 h-[300px] lg:h-[400px] xl:h-auto rounded-xl text-gray-600 overflow-auto text-center text-[10px] md:text-xs 2xl:text-sm"
             style={{
               backgroundImage:
                 "linear-gradient(to right top, #96adcf, #9eb3d2, #a7b8d5, #afbed8, #b7c4db, #bdcadf, #c2cfe3, #c8d5e7, #ccdced, #d1e4f3, #d6ebf9, #dbf2ff)",
@@ -1033,7 +1144,7 @@ const Dashboard = ({dataFromApp}) => {
                 }}
               >
                 <tr>
-                  <th className="px-2 border border-gray-500">S.No</th>
+                  <th className="px-2 2xl:py-1.5 border border-gray-500">S.No</th>
                   <th className="px-2 border border-gray-500">S1</th>
                   <th className="px-2 border border-gray-500">S2</th>
                   <th className="px-2 border border-gray-500">S3</th>
@@ -1107,11 +1218,11 @@ const Dashboard = ({dataFromApp}) => {
                 className="hidden md:block"
                 onClick={() => setLineGraphExpanded(!lineGraphExpanded)}
               >
-                <button className="expand-button px-4 flex gap-2">
+                <button className="expand-button px-4 flex gap-2 2xl:gap-4">
                   {lineGraphExpanded ? (
-                    <LuShrink className="icon text-gray-600 text-lg" />
+                    <LuShrink className="icon text-gray-600 text-lg 2xl:text-xl" />
                   ) : (
-                    <LuExpand className="icon text-gray-600 text-base" />
+                    <LuExpand className="icon text-gray-600 text-base 2xl:text-lg" />
                   )}
                   <span className="expand-text">
                     {lineGraphExpanded ? "Shrink" : "Expand"}
@@ -1231,7 +1342,7 @@ const Dashboard = ({dataFromApp}) => {
                   <label>From:</label>
                   <input
                     type="date"
-                    className="rounded-md px-0.5 2xl:p-2 border border-gray-600"
+                    className="rounded-md px-0.5 2xl:px-2 2xl:py-0.5 border border-gray-600"
                     required
                     value={datepickerSensorFromDate}
                     onChange={(e) =>
@@ -1243,7 +1354,7 @@ const Dashboard = ({dataFromApp}) => {
                   <label>To:</label>
                   <input
                     type="date"
-                    className="rounded-md px-0.5 2xl:p-2 border border-gray-600"
+                    className="rounded-md px-0.5 2xl:px-2 2xl:py-0.5 border border-gray-600"
                     required
                     value={datepickerSensorToDate}
                     onChange={(e) => setDatepickerSensorToDate(e.target.value)}
@@ -1254,7 +1365,7 @@ const Dashboard = ({dataFromApp}) => {
                   type="submit"
                 >
                   Plot
-                  <LuScatterChart className="text-xl" />
+                  <LuScatterChart className="text-xl 2xl:text-2xl" />
                 </button>
               </form>
               {datepickerLineData.length > 0 && (
@@ -1276,7 +1387,7 @@ const Dashboard = ({dataFromApp}) => {
                   });
                 }}
               >
-                <IoIosCloseCircle className="text-4xl text-red-500 hover:text-red-700 duration-200" />
+                <IoIosCloseCircle className="text-4xl 2xl:text-5xl text-red-500 hover:text-red-700 duration-200" />
               </button>
             </div>
             <div className="h-[250px] md:h-[92%]  ">
@@ -1292,539 +1403,560 @@ const Dashboard = ({dataFromApp}) => {
         {/* report popup */}
         {reportPopup && (
           <div
-            className="absolute top-[15%] md:top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 md:h-[95%] w-[95%] rounded-xl text-gray-700 p-2 z-10 flex flex-col"
+            className="absolute top-[15%] md:top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 md:h-[95%] w-[95%] rounded-xl text-gray-500 p-4 z-10 flex flex-col"
             style={{
               backgroundImage:
                 "linear-gradient(to right top, #96adcf, #9eb3d2, #a7b8d5, #afbed8, #b7c4db, #bdcadf, #c2cfe3, #c8d5e7, #ccdced, #d1e4f3, #d6ebf9, #dbf2ff)",
             }}
           >
-            <div className="h-[7%] flex justify-between">
-              <div>report content</div>
-              <button onClick={() => setReportPopup(false)}>
-                <IoIosCloseCircle className="text-4xl text-red-500 hover:text-red-700 duration-200" />
-              </button>
-            </div>
-            <div className="h-[93%] text-white p-4 overflow-hidden flex flex-col gap-4">
-              <div className="flex gap-2 justify-evenly font-medium">
-                <div
-                  className={`flex flex-col gap-1 items-center hover:scale-125 duration-200 cursor-pointer hover:text-[#D3A4B8] text-xs md:text-base ${
-                    selectedReportOption === "datePicker" && "text-[#D3A4B8]"
-                  }`}
-                  onClick={() => {
-                    setSelectedReportOption("datePicker");
-                    setCount();
-                    setSensorWiseCount();
-                    setSensorWiseFromDate("");
-                    setSensorWiseToDate("");
-                    setEnableCount(false);
-                  }}
-                >
-                  <LuCalendarSearch className="text-3xl md:text-6xl 2xl:text-8xl" />
-                  Date&nbsp;Picker
-                </div>
-
-                <div
-                  className={`flex flex-col gap-1 items-center hover:scale-125 duration-200 cursor-pointer hover:text-[#D3A4B8] text-xs md:text-base text-center ${
-                    selectedReportOption === "countWiseData" && "text-[#D3A4B8]"
-                  }`}
-                  onClick={() => {
-                    setSelectedReportOption("countWiseData");
-                    setFromDate("");
-                    setToDate("");
-                    setCount(100);
-                    setSensorWiseCount();
-                    setSensorWiseFromDate("");
-                    setSensorWiseToDate("");
-                    setEnableCount(false);
-                  }}
-                >
-                  <TbHash className="text-3xl md:text-6xl 2xl:text-8xl" />
-                  Count-wise Data
-                </div>
-
-                <div
-                  className={`flex flex-col gap-1 items-center hover:scale-125 duration-200 cursor-pointer hover:text-[#D3A4B8] text-xs md:text-base text-center ${
-                    selectedReportOption === "overallData" && "text-[#D3A4B8]"
-                  }`}
-                  onClick={() => {
-                    setSelectedReportOption("overallData");
-                    setFromDate("");
-                    setToDate("");
-                    setCount();
-                    setSensorWiseCount();
-                    setSensorWiseFromDate("");
-                    setSensorWiseToDate("");
-                    setEnableCount(false);
-                  }}
-                >
-                  <BsDatabaseDown className="text-3xl md:text-6xl 2xl:text-8xl" />
-                  Overall Data
-                </div>
-
-                <div
-                  className={`flex flex-col gap-1 items-center hover:scale-125 duration-200 cursor-pointer hover:text-[#D3A4B8] text-xs md:text-base text-center ${
-                    selectedReportOption === "sensorWiseData" &&
-                    "text-[#D3A4B8]"
-                  }`}
-                  onClick={() => {
-                    setSelectedReportOption("sensorWiseData");
-                    setFromDate("");
-                    setToDate("");
-                    setCount();
-                    setSelectedSensorWiseReportOption("datePicker");
-                    setEnableCount(false);
-                  }}
-                >
-                  <MdOutlineSensors className="text-3xl md:text-6xl 2xl:text-8xl" />
-                  Sensor-wise Data
-                </div>
+            <button
+              className="absolute top-1 right-1 md:top-2 md:right-2"
+              onClick={() => {
+                setReportPopup(false);
+                setReportData([]);
+                setSelectedReportOption("datePicker");
+                setCount();
+                setSensorWiseCount();
+                setUnselectedSensors([]);
+                setSensorWiseFromDate("");
+                setSensorWiseToDate("");
+                setEnableCount(false);
+                setFromDate("");
+                setToDate("");
+                setSelectedSensorWiseReportOption("datePicker");
+                setEnableSensorWiseCount(false);
+              }}
+            >
+              <IoIosCloseCircle className="text-xl md:text-4xl text-red-500 hover:text-red-700 duration-200" />
+            </button>
+            <div className="flex gap-2 2xl:gap-4 justify-evenly font-medium text-gray-400">
+              <div
+                className={`flex flex-col gap-1 items-center hover:scale-125 duration-200 cursor-pointer hover:text-blue-500 text-xs md:text-base ${
+                  selectedReportOption === "datePicker" && "text-blue-500"
+                }`}
+                onClick={() => {
+                  setSelectedReportOption("datePicker");
+                  setCount();
+                  setSensorWiseCount();
+                  setUnselectedSensors([]);
+                  setSensorWiseFromDate("");
+                  setSensorWiseToDate("");
+                  setEnableCount(false);
+                }}
+              >
+                <LuCalendarSearch className="text-3xl md:text-6xl 2xl:text-8xl" />
+                Date&nbsp;Picker
               </div>
 
-              <div className="flex-1 flex items-center justify-center">
-                <div className="flex flex-col md:flex-row p-4 md:p-8 bg-white/10 rounded-xl">
-                  <div className="p-2 md:p-4 flex items-center justify-center">
-                    <img
-                      src={reportsImg}
-                      alt="reportsVector"
-                      className="max-w-[150px] md:max-w-[300px] rounded-xl"
-                    />
-                  </div>
-                  {/* datepicker option */}
-                  {selectedReportOption === "datePicker" && (
-                    <div className="p-4 md:p-8 flex flex-col items-center justify-center gap-6">
-                      <center className="text-xl font-medium">
-                        Select Date
-                      </center>
-                      <div className="flex gap-2">
-                        <div className="flex flex-col gap-4 font-medium">
-                          <label>From</label>
-                          <label>To</label>
-                        </div>
-                        <div className="flex flex-col gap-4">
-                          <input
-                            type="date"
-                            className="text-gray-600 rounded-md px-0.5"
-                            required
-                            value={fromDate}
-                            onChange={(e) => setFromDate(e.target.value)}
-                          />
-                          <input
-                            type="date"
-                            className="text-gray-600 rounded-md px-0.5"
-                            required
-                            value={toDate}
-                            onChange={(e) => setToDate(e.target.value)}
-                          />
-                        </div>
+              <div
+                className={`flex flex-col gap-1 items-center hover:scale-125 duration-200 cursor-pointer hover:text-blue-500 text-xs md:text-base text-center ${
+                  selectedReportOption === "countWiseData" && "text-blue-500"
+                }`}
+                onClick={() => {
+                  setSelectedReportOption("countWiseData");
+                  setFromDate("");
+                  setToDate("");
+                  setCount(100);
+                  setSensorWiseCount();
+                  setUnselectedSensors([]);
+                  setSensorWiseFromDate("");
+                  setSensorWiseToDate("");
+                  setEnableCount(false);
+                }}
+              >
+                <TbHash className="text-3xl md:text-6xl 2xl:text-8xl" />
+                Count-wise Data
+              </div>
+
+              <div
+                className={`flex flex-col gap-1 items-center hover:scale-125 duration-200 cursor-pointer hover:text-blue-500 text-xs md:text-base text-center ${
+                  selectedReportOption === "overallData" && "text-blue-500"
+                }`}
+                onClick={() => {
+                  setSelectedReportOption("overallData");
+                  setFromDate("");
+                  setToDate("");
+                  setCount();
+                  setSensorWiseCount();
+                  setUnselectedSensors([]);
+                  setSensorWiseFromDate("");
+                  setSensorWiseToDate("");
+                  setEnableCount(false);
+                }}
+              >
+                <BsDatabaseDown className="text-3xl md:text-6xl 2xl:text-8xl" />
+                Overall Data
+              </div>
+
+              <div
+                className={`flex flex-col gap-1 items-center hover:scale-125 duration-200 cursor-pointer hover:text-blue-500 text-xs md:text-base text-center ${
+                  selectedReportOption === "sensorWiseData" && "text-blue-500"
+                }`}
+                onClick={() => {
+                  setSelectedReportOption("sensorWiseData");
+                  setFromDate("");
+                  setToDate("");
+                  setCount();
+                  setSelectedSensorWiseReportOption("datePicker");
+                  setEnableCount(false);
+                }}
+              >
+                <MdOutlineSensors className="text-3xl md:text-6xl 2xl:text-8xl" />
+                Sensor-wise Data
+              </div>
+            </div>
+
+            <div className="flex-1 flex justify-center items-center">
+              <div className="flex flex-col md:flex-row rounded-xl">
+                <div className="p-2 md:p-4 flex items-center justify-center">
+                  <img
+                    src={reportsImg}
+                    alt="reportsVector"
+                    className="max-w-[150px] md:max-w-[300px] rounded-xl"
+                  />
+                </div>
+                {/* datepicker option */}
+                {selectedReportOption === "datePicker" && (
+                  <div className="p-4 md:p-8 flex flex-col items-center justify-center gap-6">
+                    <center className="text-xl font-medium">Select Date</center>
+                    <div className="flex gap-2">
+                      <div className="flex flex-col gap-4 font-medium">
+                        <label>From</label>
+                        <label>To</label>
                       </div>
-                      <div className="flex justify-center gap-4 font-medium">
-                        <button
-                          className="rounded-md bg-red-500 hover:scale-110 duration-200 py-1 px-2 2xl:py-2 2xl:px-4 flex items-center gap-2"
-                          onClick={generatePdf}
-                        >
-                          PDF <FaCloudDownloadAlt className="text-lg" />
-                        </button>
-                        <button
-                          className="rounded-md bg-green-500 hover:scale-110 duration-200 py-1 px-2 2xl:py-2 2xl:px-4 flex items-center gap-2"
-                          onClick={generateExcel}
-                        >
-                          Excel <FaFileDownload className="text-lg" />
-                        </button>
+                      <div className="flex flex-col gap-4">
+                        <input
+                          type="date"
+                          className="text-gray-600 rounded-md px-0.5"
+                          required
+                          value={fromDate}
+                          onChange={(e) => setFromDate(e.target.value)}
+                        />
+                        <input
+                          type="date"
+                          className="text-gray-600 rounded-md px-0.5"
+                          required
+                          value={toDate}
+                          onChange={(e) => setToDate(e.target.value)}
+                        />
                       </div>
                     </div>
-                  )}
+                    <div className="flex justify-center gap-4 font-medium text-white">
+                      <button
+                        className="rounded-md bg-red-500 hover:scale-110 duration-200 py-1 px-2 2xl:py-2 2xl:px-4 flex items-center gap-2 2xl:gap-4"
+                        onClick={generatePdf}
+                      >
+                        PDF{" "}
+                        <FaCloudDownloadAlt className="text-lg 2xl:text-2xl" />
+                      </button>
+                      <button
+                        className="rounded-md bg-green-500 hover:scale-110 duration-200 py-1 px-2 2xl:py-2 2xl:px-4 flex items-center gap-2 2xl:gap-4"
+                        onClick={generateExcel}
+                      >
+                        Excel{" "}
+                        <FaFileDownload className="text-lg 2xl:text-2xl" />
+                      </button>
+                    </div>
+                  </div>
+                )}
 
-                  {/* countwise option */}
-                  {selectedReportOption === "countWiseData" && (
-                    <div className="flex flex-col gap-4 py-4 md:py-8 px-5 md:px-10 items-center justify-center">
-                      <center className="text-xl font-medium">
-                        Select Count
-                      </center>
-                      <div className="flex flex-col gap-2 md:gap-4">
-                        <div className="flex items-center">
+                {/* countwise option */}
+                {selectedReportOption === "countWiseData" && (
+                  <div className="flex flex-col gap-4 py-4 md:py-8 px-5 md:px-10 items-center justify-center">
+                    <center className="text-xl font-medium">
+                      Select Count
+                    </center>
+                    <div className="flex flex-col gap-2 2xl:gap-4 md:gap-4">
+                      <div className="flex items-center">
+                        <input
+                          type="radio"
+                          id="option1"
+                          name="options"
+                          value={100}
+                          checked={count === 100}
+                          readOnly
+                          className="cursor-pointer mr-1"
+                          onClick={() => {
+                            setCount(100);
+                            setEnableCount(false);
+                          }}
+                        />
+                        <label htmlFor="option1" className="cursor-pointer">
+                          Last 100 Data
+                        </label>
+                      </div>
+
+                      <div>
+                        <input
+                          type="radio"
+                          id="option2"
+                          name="options"
+                          value={500}
+                          checked={count === 500}
+                          readOnly
+                          className="cursor-pointer mr-1"
+                          onClick={() => {
+                            setCount(500);
+                            setEnableCount(false);
+                          }}
+                        />
+                        <label htmlFor="option2" className="cursor-pointer">
+                          Last 500 Data
+                        </label>
+                      </div>
+
+                      <div>
+                        <input
+                          type="radio"
+                          id="option3"
+                          name="options"
+                          value={1000}
+                          checked={count === 1000}
+                          readOnly
+                          className="cursor-pointer mr-1"
+                          onClick={() => {
+                            setCount(1000);
+                            setEnableCount(false);
+                          }}
+                        />
+                        <label htmlFor="option3" className="cursor-pointer">
+                          Last 1000 Data
+                        </label>
+                      </div>
+
+                      <div>
+                        <input
+                          type="radio"
+                          id="option4"
+                          name="options"
+                          className="cursor-pointer mr-1"
+                          checked={enableCount === true}
+                          readOnly
+                          onClick={() => {
+                            setCount(0);
+                            setEnableCount(true);
+                          }}
+                        />
+                        <label htmlFor="option4" className="cursor-pointer">
+                          Custom Count
+                        </label>
+                      </div>
+
+                      {enableCount && (
+                        <>
+                          <label htmlFor="count">Enter Count:</label>
                           <input
-                            type="radio"
-                            id="option1"
-                            name="options"
-                            value={100}
-                            checked={count === 100}
-                            readOnly
-                            className="cursor-pointer mr-1"
-                            onClick={() => {
-                              setCount(100);
-                              setEnableCount(false);
-                            }}
+                            type="number"
+                            id="count"
+                            value={count}
+                            className="text-gray-600 w-32 rounded-md px-2"
+                            onChange={(e) =>
+                              setCount(parseInt(e.target.value) || 0)
+                            }
                           />
-                          <label htmlFor="option1" className="cursor-pointer">
-                            Last 100 Data
-                          </label>
-                        </div>
+                        </>
+                      )}
+                    </div>
+                    <div className="flex gap-4 text-white">
+                      <button
+                        className="rounded-md bg-red-500 hover:scale-110 duration-200 py-1 px-2 2xl:py-2 2xl:px-4 flex items-center gap-2 "
+                        onClick={generatePdf}
+                      >
+                        PDF{" "}
+                        <FaCloudDownloadAlt className="text-lg 2xl:text-2xl" />
+                      </button>
+                      <button
+                        className="rounded-md bg-green-500 hover:scale-110 duration-200 py-1 px-2 2xl:py-2 2xl:px-4 flex items-center gap-2"
+                        onClick={generateExcel}
+                      >
+                        Excel{" "}
+                        <FaFileDownload className="text-lg 2xl:text-2xl" />
+                      </button>
+                    </div>
+                  </div>
+                )}
 
-                        <div>
-                          <input
-                            type="radio"
-                            id="option2"
-                            name="options"
-                            value={500}
-                            checked={count === 500}
-                            readOnly
-                            className="cursor-pointer mr-1"
-                            onClick={() => {
-                              setCount(500);
-                              setEnableCount(false);
-                            }}
-                          />
-                          <label htmlFor="option2" className="cursor-pointer">
-                            Last 500 Data
-                          </label>
-                        </div>
+                {/* overall data option */}
+                {selectedReportOption === "overallData" && (
+                  <div className="p-8 flex flex-col items-center justify-center gap-6">
+                    <div className="font-medium">
+                      Entire data from the database <br /> will be downloaded!
+                    </div>
+                    <div className="flex gap-4 text-white">
+                      <button
+                        className="rounded-md bg-red-500 hover:scale-110 duration-200 py-1 px-2 2xl:py-2 2xl:px-4 flex items-center gap-2"
+                        onClick={generatePdf}
+                      >
+                        PDF{" "}
+                        <FaCloudDownloadAlt className="text-lg 2xl:text-2xl" />
+                      </button>
+                      <button
+                        className="rounded-md bg-green-500 hover:scale-110 duration-200 py-1 px-2 2xl:py-2 2xl:px-4 flex items-center gap-2"
+                        onClick={generateExcel}
+                      >
+                        Excel{" "}
+                        <FaFileDownload className="text-lg 2xl:text-2xl" />
+                      </button>
+                    </div>
+                  </div>
+                )}
 
-                        <div>
-                          <input
-                            type="radio"
-                            id="option3"
-                            name="options"
-                            value={1000}
-                            checked={count === 1000}
-                            readOnly
-                            className="cursor-pointer mr-1"
-                            onClick={() => {
-                              setCount(1000);
-                              setEnableCount(false);
-                            }}
-                          />
-                          <label htmlFor="option3" className="cursor-pointer">
-                            Last 1000 Data
-                          </label>
-                        </div>
+                {/* sensorwise data option */}
+                {selectedReportOption === "sensorWiseData" && (
+                  <div className="px-4 md:px-8 py-2 md:py-2 flex flex-col items-center justify-center gap-4 text-sm md:text-base">
+                    <center className="text-sm md:text-xl font-medium">
+                      Select sensor
+                    </center>
+                    {/* sensor selection */}
+                    <div className="flex gap-2 md:gap-4">
+                      {parameters &&
+                        Object.keys(parameters).length > 0 &&
+                        Object.keys(parameters).map((key) => (
+                          <div className="flex gap-1 items-center" key={key}>
+                            <input
+                              type="checkbox"
+                              className="h-3 md:h-6 w-3 md:w-6 cursor-pointer"
+                              value={key}
+                              onClick={() =>
+                                handleSensorWiseDataSensorSelection(key)
+                              }
+                            />
+                            <label>{key}</label>
+                          </div>
+                        ))}
+                    </div>
 
-                        <div>
-                          <input
-                            type="radio"
-                            id="option4"
-                            name="options"
-                            className="cursor-pointer mr-1"
-                            checked={enableCount === true}
-                            readOnly
-                            onClick={() => {
-                              setCount(0);
-                              setEnableCount(true);
-                            }}
-                          />
-                          <label htmlFor="option4" className="cursor-pointer">
-                            Custom Count
-                          </label>
-                        </div>
+                    <div className="flex gap-4 font-medium text-gray-400">
+                      <div
+                        className={`flex flex-col gap-1 items-center hover:scale-110 duration-200 cursor-pointer hover:text-blue-500 text-xs md:text-base ${
+                          selectedSensorWiseReportOption === "datePicker" &&
+                          "text-blue-500"
+                        }`}
+                        onClick={() => {
+                          setSelectedSensorWiseReportOption("datePicker");
+                          setSensorWiseCount();
+                          setEnableSensorWiseCount(false);
+                        }}
+                      >
+                        <LuCalendarSearch className="text-2xl md:text-5xl" />
+                        Date Picker
+                      </div>
 
-                        {enableCount && (
-                          <>
+                      <div
+                        className={`flex flex-col gap-1 items-center hover:scale-110 duration-200 cursor-pointer hover:text-blue-500 text-xs md:text-base ${
+                          selectedSensorWiseReportOption === "countWiseData" &&
+                          "text-blue-500"
+                        }`}
+                        onClick={() => {
+                          setSelectedSensorWiseReportOption("countWiseData");
+                          setSensorWiseFromDate("");
+                          setSensorWiseToDate("");
+                          setSensorWiseCount(100);
+                          setEnableSensorWiseCount(false);
+                        }}
+                      >
+                        <TbHash className="text-2xl md:text-5xl" />
+                        Count-wise Data
+                      </div>
+
+                      <div
+                        className={`flex flex-col gap-1 items-center hover:scale-110 duration-200 cursor-pointer hover:text-blue-500 text-xs md:text-base ${
+                          selectedSensorWiseReportOption === "overallData" &&
+                          "text-blue-500"
+                        }`}
+                        onClick={() => {
+                          setSelectedSensorWiseReportOption("overallData");
+                          setSensorWiseFromDate("");
+                          setSensorWiseToDate("");
+                          setSensorWiseCount();
+                          setEnableSensorWiseCount(false);
+                        }}
+                      >
+                        <BsDatabaseDown className="text-2xl md:text-5xl" />
+                        Overall Data
+                      </div>
+                    </div>
+
+                    {/* sensorwise datepicker option */}
+                    {selectedSensorWiseReportOption === "datePicker" && (
+                      <div className="flex flex-col items-center justify-center gap-2 ">
+                        <center className="text-sm md:text-xl font-medium">
+                          Select date
+                        </center>
+                        <div className="flex gap-2">
+                          <div className="flex flex-col gap-2 font-medium">
+                            <label>From</label>
+                            <label>To</label>
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            <input
+                              type="date"
+                              className="text-gray-600 rounded-md px-0.5"
+                              required
+                              value={sensorWiseFromDate}
+                              onChange={(e) =>
+                                setSensorWiseFromDate(e.target.value)
+                              }
+                            />
+                            <input
+                              type="date"
+                              className="text-gray-600 rounded-md px-0.5"
+                              required
+                              value={sensorWiseToDate}
+                              onChange={(e) =>
+                                setSensorWiseToDate(e.target.value)
+                              }
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* sensorwise countwise option */}
+                    {selectedSensorWiseReportOption === "countWiseData" && (
+                      <div className="flex flex-col gap-2">
+                        <center className="text-sm md:text-xl font-medium">
+                          Select Count
+                        </center>
+                        <div className="flex gap-4">
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center">
+                              <input
+                                type="radio"
+                                id="option1"
+                                name="options"
+                                value={100}
+                                checked={sensorWiseCount === 100}
+                                readOnly
+                                className="cursor-pointer mr-1"
+                                onClick={() => {
+                                  setSensorWiseCount(100);
+                                  setEnableSensorWiseCount(false);
+                                }}
+                              />
+                              <label
+                                htmlFor="option1"
+                                className="cursor-pointer"
+                              >
+                                Last 100 Data
+                              </label>
+                            </div>
+                            <div>
+                              <input
+                                type="radio"
+                                id="option3"
+                                name="options"
+                                value={1000}
+                                checked={sensorWiseCount === 1000}
+                                readOnly
+                                className="cursor-pointer mr-1"
+                                onClick={() => {
+                                  setSensorWiseCount(1000);
+                                  setEnableSensorWiseCount(false);
+                                }}
+                              />
+                              <label
+                                htmlFor="option3"
+                                className="cursor-pointer"
+                              >
+                                Last 1000 Data
+                              </label>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-2">
+                            <div>
+                              <input
+                                type="radio"
+                                id="option2"
+                                name="options"
+                                value={500}
+                                checked={sensorWiseCount === 500}
+                                readOnly
+                                className="cursor-pointer mr-1"
+                                onClick={() => {
+                                  setSensorWiseCount(500);
+                                  setEnableSensorWiseCount(false);
+                                }}
+                              />
+                              <label
+                                htmlFor="option2"
+                                className="cursor-pointer"
+                              >
+                                Last 500 Data
+                              </label>
+                            </div>
+
+                            <div>
+                              <input
+                                type="radio"
+                                id="option4"
+                                name="options"
+                                checked={enableSensorWiseCount === true}
+                                readOnly
+                                className="cursor-pointer mr-1"
+                                onClick={() => {
+                                  setSensorWiseCount(0);
+                                  setEnableSensorWiseCount(true);
+                                }}
+                              />
+                              <label
+                                htmlFor="option4"
+                                className="cursor-pointer"
+                              >
+                                Custom Count
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                        {enableSensorWiseCount && (
+                          <div className="flex gap-2">
                             <label htmlFor="count">Enter Count:</label>
                             <input
                               type="number"
                               id="count"
-                              value={count}
-                              className="text-gray-600 w-32 rounded-md px-2"
+                              value={sensorWiseCount}
+                              className="text-gray-600 w-40 rounded-md px-2"
                               onChange={(e) =>
-                                setCount(parseInt(e.target.value) || 0)
+                                setSensorWiseCount(
+                                  parseInt(e.target.value) || 0
+                                )
                               }
                             />
-                          </>
+                          </div>
                         )}
                       </div>
-                      <div className="flex gap-4">
-                        <button
-                          className="rounded-md bg-red-500 hover:scale-110 duration-200 py-1 px-2 2xl:py-2 2xl:px-4 flex items-center gap-2"
-                          onClick={generatePdf}
-                        >
-                          PDF <FaCloudDownloadAlt className="text-lg" />
-                        </button>
-                        <button
-                          className="rounded-md bg-green-500 hover:scale-110 duration-200 py-1 px-2 2xl:py-2 2xl:px-4 flex items-center gap-2"
-                          onClick={generateExcel}
-                        >
-                          Excel <FaFileDownload className="text-lg" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* overall data option */}
-                  {selectedReportOption === "overallData" && (
-                    <div className="p-8 flex flex-col items-center justify-center gap-6">
+                    {/* sensorwise overall data option */}
+                    {selectedSensorWiseReportOption === "overallData" && (
                       <div className="font-medium">
-                        Entire data from the database <br /> will be downloaded!
+                        Entire data from the database will be <br />
+                        downloaded!
                       </div>
-                      <div className="flex gap-4">
-                        <button
-                          className="rounded-md bg-red-500 hover:scale-110 duration-200 py-1 px-2 2xl:py-2 2xl:px-4 flex items-center gap-2"
-                          onClick={generatePdf}
-                        >
-                          PDF <FaCloudDownloadAlt className="text-lg" />
-                        </button>
-                        <button
-                          className="rounded-md bg-green-500 hover:scale-110 duration-200 py-1 px-2 2xl:py-2 2xl:px-4 flex items-center gap-2"
-                          onClick={generateExcel}
-                        >
-                          Excel <FaFileDownload className="text-lg" />
-                        </button>
-                      </div>
+                    )}
+
+                    <div className="flex gap-4 text-white">
+                      <button
+                        className="rounded-md bg-red-500 hover:scale-110 duration-200 py-1 px-2 2xl:py-2 2xl:px-4 flex items-center gap-2"
+                        onClick={generatePdf}
+                      >
+                        PDF{" "}
+                        <FaCloudDownloadAlt className="text-lg 2xl:text-2xl" />
+                      </button>
+                      <button
+                        className="rounded-md bg-green-500 hover:scale-110 duration-200 py-1 px-2 2xl:py-2 2xl:px-4 flex items-center gap-2"
+                        onClick={generateExcel}
+                      >
+                        Excel{" "}
+                        <FaFileDownload className="text-lg 2xl:text-2xl" />
+                      </button>
                     </div>
-                  )}
-
-                  {/* sensorwise data option */}
-                  {selectedReportOption === "sensorWiseData" && (
-                    <div className="px-4 md:px-8 py-2 md:py-4 flex flex-col items-center justify-center gap-4 text-sm md:text-base">
-                      <center className="text-sm md:text-xl font-medium">
-                        Select sensor
-                      </center>
-                      {/* sensor selection */}
-                      <div className="flex gap-2 md:gap-4">
-                        {parameters &&
-                          Object.keys(parameters).length > 0 &&
-                          Object.keys(parameters).map((key) => (
-                            <div className="flex gap-1 items-center" key={key}>
-                              <input
-                                type="checkbox"
-                                className="h-3 md:h-6 w-3 md:w-6 cursor-pointer"
-                                value={key}
-                                onClick={() =>
-                                  handleSensorWiseDataSensorSelection(key)
-                                }
-                              />
-                              <label>{key}</label>
-                            </div>
-                          ))}
-                      </div>
-
-                      <div className="flex gap-4 font-medium">
-                        <div
-                          className={`flex flex-col gap-1 items-center hover:scale-110 duration-200 cursor-pointer hover:text-[#D3A4B8] text-xs md:text-base ${
-                            selectedSensorWiseReportOption === "datePicker" &&
-                            "text-[#D3A4B8]"
-                          }`}
-                          onClick={() => {
-                            setSelectedSensorWiseReportOption("datePicker");
-                            setSensorWiseCount();
-                            setEnableSensorWiseCount(false);
-                          }}
-                        >
-                          <LuCalendarSearch className="text-2xl md:text-5xl" />
-                          Date Picker
-                        </div>
-
-                        <div
-                          className={`flex flex-col gap-1 items-center hover:scale-110 duration-200 cursor-pointer hover:text-[#D3A4B8] text-xs md:text-base ${
-                            selectedSensorWiseReportOption ===
-                              "countWiseData" && "text-[#D3A4B8]"
-                          }`}
-                          onClick={() => {
-                            setSelectedSensorWiseReportOption("countWiseData");
-                            setSensorWiseFromDate("");
-                            setSensorWiseToDate("");
-                            setSensorWiseCount(100);
-                            setEnableSensorWiseCount(false);
-                          }}
-                        >
-                          <TbHash className="text-2xl md:text-5xl" />
-                          Count-wise Data
-                        </div>
-
-                        <div
-                          className={`flex flex-col gap-1 items-center hover:scale-110 duration-200 cursor-pointer hover:text-[#D3A4B8] text-xs md:text-base ${
-                            selectedSensorWiseReportOption === "overallData" &&
-                            "text-[#D3A4B8]"
-                          }`}
-                          onClick={() => {
-                            setSelectedSensorWiseReportOption("overallData");
-                            setSensorWiseFromDate("");
-                            setSensorWiseToDate("");
-                            setSensorWiseCount();
-                            setEnableSensorWiseCount(false);
-                          }}
-                        >
-                          <BsDatabaseDown className="text-2xl md:text-5xl" />
-                          Overall Data
-                        </div>
-                      </div>
-
-                      {/* sensorwise datepicker option */}
-                      {selectedSensorWiseReportOption === "datePicker" && (
-                        <div className="flex flex-col items-center justify-center gap-2">
-                          <center className="text-sm md:text-xl font-medium">
-                            Select date
-                          </center>
-                          <div className="flex gap-2">
-                            <div className="flex flex-col gap-2 font-medium">
-                              <label>From</label>
-                              <label>To</label>
-                            </div>
-                            <div className="flex flex-col gap-2">
-                              <input
-                                type="date"
-                                className="text-gray-600 rounded-md px-0.5"
-                                required
-                                value={sensorWiseFromDate}
-                                onChange={(e) =>
-                                  setSensorWiseFromDate(e.target.value)
-                                }
-                              />
-                              <input
-                                type="date"
-                                className="text-gray-600 rounded-md px-0.5"
-                                required
-                                value={sensorWiseToDate}
-                                onChange={(e) =>
-                                  setSensorWiseToDate(e.target.value)
-                                }
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* sensorwise countwise option */}
-                      {selectedSensorWiseReportOption === "countWiseData" && (
-                        <div className="flex flex-col gap-2">
-                          <center className="text-sm md:text-xl font-medium">
-                            Select Count
-                          </center>
-                          <div className="flex gap-4">
-                            <div className="flex flex-col gap-2">
-                              <div className="flex items-center">
-                                <input
-                                  type="radio"
-                                  id="option1"
-                                  name="options"
-                                  value={100}
-                                  checked={sensorWiseCount === 100}
-                                  readOnly
-                                  className="cursor-pointer mr-1"
-                                  onClick={() => {
-                                    setSensorWiseCount(100);
-                                    setEnableSensorWiseCount(false);
-                                  }}
-                                />
-                                <label
-                                  htmlFor="option1"
-                                  className="cursor-pointer"
-                                >
-                                  Last 100 Data
-                                </label>
-                              </div>
-                              <div>
-                                <input
-                                  type="radio"
-                                  id="option3"
-                                  name="options"
-                                  value={1000}
-                                  checked={sensorWiseCount === 1000}
-                                  readOnly
-                                  className="cursor-pointer mr-1"
-                                  onClick={() => {
-                                    setSensorWiseCount(1000);
-                                    setEnableSensorWiseCount(false);
-                                  }}
-                                />
-                                <label
-                                  htmlFor="option3"
-                                  className="cursor-pointer"
-                                >
-                                  Last 1000 Data
-                                </label>
-                              </div>
-                            </div>
-
-                            <div className="flex flex-col gap-2">
-                              <div>
-                                <input
-                                  type="radio"
-                                  id="option2"
-                                  name="options"
-                                  value={500}
-                                  checked={sensorWiseCount === 500}
-                                  readOnly
-                                  className="cursor-pointer mr-1"
-                                  onClick={() => {
-                                    setSensorWiseCount(500);
-                                    setEnableSensorWiseCount(false);
-                                  }}
-                                />
-                                <label
-                                  htmlFor="option2"
-                                  className="cursor-pointer"
-                                >
-                                  Last 500 Data
-                                </label>
-                              </div>
-
-                              <div>
-                                <input
-                                  type="radio"
-                                  id="option4"
-                                  name="options"
-                                  checked={enableSensorWiseCount === true}
-                                  readOnly
-                                  className="cursor-pointer mr-1"
-                                  onClick={() => {
-                                    setSensorWiseCount(0);
-                                    setEnableSensorWiseCount(true);
-                                  }}
-                                />
-                                <label
-                                  htmlFor="option4"
-                                  className="cursor-pointer"
-                                >
-                                  Custom Count
-                                </label>
-                              </div>
-                            </div>
-                          </div>
-                          {enableSensorWiseCount && (
-                            <div className="flex gap-2">
-                              <label htmlFor="count">Enter Count:</label>
-                              <input
-                                type="number"
-                                id="count"
-                                value={sensorWiseCount}
-                                className="text-gray-600 w-40 rounded-md px-2"
-                                onChange={(e) =>
-                                  setSensorWiseCount(
-                                    parseInt(e.target.value) || 0
-                                  )
-                                }
-                              />
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* sensorwise overall data option */}
-                      {selectedSensorWiseReportOption === "overallData" && (
-                        <div className="font-medium">
-                          Entire data from the database will be <br />
-                          downloaded!
-                        </div>
-                      )}
-
-                      <div className="flex gap-4">
-                        <button
-                          className="rounded-md bg-red-500 hover:scale-110 duration-200 py-1 px-2 2xl:py-2 2xl:px-4 flex items-center gap-2"
-                          onClick={generatePdf}
-                        >
-                          PDF <FaCloudDownloadAlt className="text-lg" />
-                        </button>
-                        <button
-                          className="rounded-md bg-green-500 hover:scale-110 duration-200 py-1 px-2 2xl:py-2 2xl:px-4 flex items-center gap-2"
-                          onClick={generateExcel}
-                        >
-                          Excel <FaFileDownload className="text-lg" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
+            {/* </div> */}
           </div>
         )}
       </div>
